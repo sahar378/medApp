@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -91,7 +93,7 @@ public class UserService {
         user.setPasswordExpired(true);
         userRepository.save(user);
      // Envoi de l'email avec les identifiants
-        emailService.sendTemporaryPasswordEmail(
+       emailService.sendTemporaryPasswordEmail(
             user.getEmail(),
             String.valueOf(user.getUserId()),
             tempPassword,
@@ -107,10 +109,7 @@ public class UserService {
         user.setProfil(profil);
         userRepository.save(user);
     }
-  //Retourne tous les utilisateurs.
-    public List<User> findAll() {
-        return userRepository.findAll();
-    }
+    
 //logique de la connexion
     public String authenticate(Long userId, String password) {
         logger.info("Tentative d'authentification pour userId: {}", userId);
@@ -146,4 +145,57 @@ public class UserService {
             throw new RuntimeException("Authentication failed: Invalid userId or password");
         }
     }
+    
+  //Retourne tous les utilisateurs.
+    public List<User> findAll() {
+        return userRepository.findAll();
+    }
+ // Ajouter un nouvel agent (sans mot de passe)
+    public User addAgent(Long userId, String nom, String prenom, String email, Date dateNaissance, String numeroTelephone) {
+        Optional<User> existingUser = userRepository.findByUserId(userId);
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Un agent avec ce matricule existe déjà");
+        }
+        User user = new User();
+        user.setUserId(userId);
+        user.setNom(nom);
+        user.setPrenom(prenom);
+        user.setEmail(email);
+        user.setDateNaissance(dateNaissance);
+        user.setNumeroTelephone(numeroTelephone);
+        user.setPasswordExpired(true); // Par défaut, pas de mot de passe défini
+        return userRepository.save(user);
+    }
+ // Modifier les informations d’un agent (sans mot de passe)
+    public void updateAgent(Long userId, String nom, String prenom, String email, Date dateNaissance, String numeroTelephone) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+        user.setNom(nom);
+        user.setPrenom(prenom);
+        user.setEmail(email);
+        user.setDateNaissance(dateNaissance);
+        user.setNumeroTelephone(numeroTelephone);
+        userRepository.save(user);
+    }
+
+    // Supprimer un agent
+    public void deleteAgent(Long userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+        userRepository.delete(user);
+    }
+ // Récupérer les agents avec accès (ayant un mot de passe)
+    public List<User> getAgentsWithAccess() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getPassword() != null && !user.getPassword().isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    // Récupérer les agents sans accès (sans mot de passe)
+    public List<User> getAgentsWithoutAccess() {
+        return userRepository.findAll().stream()
+                .filter(user -> user.getPassword() == null || user.getPassword().isEmpty())
+                .collect(Collectors.toList());
+    }
+    
 }

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -54,6 +55,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll() // Public pour login/logout/change-password
                         .requestMatchers("/api/test/generate-hash").permitAll() // Ajout pour autoriser l'accès public à cet endpoint
                         .requestMatchers("/api/intendant/**").hasAuthority("INTENDANT") // Réservé à l'intendant
+                     // Autoriser INTENDANT et RESPONSABLE_STOCK pour les requêtes GET sur /api/stock/**
+                        .requestMatchers(HttpMethod.GET, "/api/stock/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        // Restreindre POST, PUT, DELETE sur /api/stock/** à RESPONSABLE_STOCK uniquement
+                        .requestMatchers("/api/stock/**").hasAuthority("RESPONSABLE_STOCK")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
