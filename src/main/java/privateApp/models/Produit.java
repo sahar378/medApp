@@ -21,15 +21,14 @@ public class Produit {
 
     @Temporal(TemporalType.DATE)
     @Column(name = "date_expiration")
-    private Date dateExpiration; // Nullable pour les matériels
+    private Date dateExpiration;
 
     @ManyToOne
     @JoinColumn(name = "id_categorie", nullable = false)
     private Categorie categorie;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Responsable de stock qui gère ce produit
+    @Column(name = "archive", nullable = false) // Nouveau champ
+    private boolean archive = false; // Par défaut, pas archivé
 
     // Constructeurs
     public Produit() {}
@@ -49,9 +48,6 @@ public class Produit {
     public void setDateExpiration(Date dateExpiration) { this.dateExpiration = dateExpiration; }
     public Categorie getCategorie() { return categorie; }
     public void setCategorie(Categorie categorie) { this.categorie = categorie; }
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public boolean isArchive() { return archive; }
+    public void setArchive(boolean archive) { this.archive = archive; }
 }
-/*@JoinColumn : Cette annotation permet d’indiquer le nom de la clé étrangère dans la table de l’entité concernée.
- * 
- */

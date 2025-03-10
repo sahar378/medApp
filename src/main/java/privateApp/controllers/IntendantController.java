@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import privateApp.dtos.AssignRoleRequest;
+import privateApp.dtos.AssignRolesRequest;
 import privateApp.dtos.ResetPasswordRequest;
+import privateApp.models.Profil;
 import privateApp.models.User;
 import privateApp.services.UserService;
 
@@ -37,11 +39,15 @@ public class IntendantController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-//Attribue un rôle à un utilisateur.
-    @PostMapping("/assign-role")
-    public ResponseEntity<?> assignRole(@RequestBody AssignRoleRequest request) {
-        userService.assignRole(request.getUserId(), request.getProfilId());
-        return ResponseEntity.ok("Rôle assigné avec succès");
+    @PostMapping("/assign-roles")
+    public ResponseEntity<?> assignRoles(@RequestBody AssignRolesRequest request) {
+        userService.assignRoles(request.getUserId(), request.getProfilIds());
+        return ResponseEntity.ok("Rôles assignés avec succès");
+    }
+
+    @GetMapping("/profils")
+    public ResponseEntity<List<Profil>> getAllProfils() {
+        return ResponseEntity.ok(userService.getAllProfils());
     }
 }
 /*Logique globale

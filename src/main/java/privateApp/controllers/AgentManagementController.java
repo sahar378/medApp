@@ -20,11 +20,10 @@ public class AgentManagementController {
     @Autowired
     private UserService userService;
 
-    // Ajouter un agent
+ // Ajouter un agent avec userId généré automatiquement
     @PostMapping("/add")
     public ResponseEntity<User> addAgent(@RequestBody AgentRequest request) {
         User agent = userService.addAgent(
-            request.getUserId(),
             request.getNom(),
             request.getPrenom(),
             request.getEmail(),

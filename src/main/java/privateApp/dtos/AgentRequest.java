@@ -3,7 +3,6 @@ package privateApp.dtos;
 import java.util.Date;
 
 public class AgentRequest {
-    private Long userId;
     private String nom;
     private String prenom;
     private String email;
@@ -11,8 +10,6 @@ public class AgentRequest {
     private String numeroTelephone;
 
     // Getters et Setters
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
     public String getNom() { return nom; }
     public void setNom(String nom) { this.nom = nom; }
     public String getPrenom() { return prenom; }

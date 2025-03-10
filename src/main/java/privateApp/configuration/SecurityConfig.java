@@ -41,24 +41,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-        		.csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(request -> {
                     var corsConfiguration = new CorsConfiguration();
-                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000")); // Origines autorisées
-                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE")); // Méthodes autorisées
-                    corsConfiguration.setAllowedHeaders(List.of("*")); // En-têtes autorisés
-                    corsConfiguration.setAllowCredentials(true); // Autoriser les cookies
+                    corsConfiguration.setAllowedOrigins(List.of("http://localhost:3000"));
+                    corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+                    corsConfiguration.setAllowedHeaders(List.of("*"));
+                    corsConfiguration.setAllowCredentials(true);
                     return corsConfiguration;
                 }))
-                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public pour login/logout/change-password
-                        .requestMatchers("/api/test/generate-hash").permitAll() // Ajout pour autoriser l'accès public à cet endpoint
+                        .requestMatchers("/api/test/generate-hash").permitAll() // Public pour generate-hash
                         .requestMatchers("/api/intendant/**").hasAuthority("INTENDANT") // Réservé à l'intendant
-                     // Autoriser INTENDANT et RESPONSABLE_STOCK pour les requêtes GET sur /api/stock/**
-                        .requestMatchers(HttpMethod.GET, "/api/stock/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
-                        // Restreindre POST, PUT, DELETE sur /api/stock/** à RESPONSABLE_STOCK uniquement
-                        .requestMatchers("/api/stock/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.GET, "/api/stock/logs").hasAuthority("INTENDANT") // Logs réservés à l'intendant
+                        .requestMatchers(HttpMethod.GET, "/api/stock/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Autres GET pour les deux rôles
+                        .requestMatchers("/api/stock/**").hasAuthority("RESPONSABLE_STOCK") // POST, PUT, DELETE pour RESPONSABLE_STOCK
+                        .requestMatchers("/api/medical/**").hasAuthority("PERSONNEL_MEDICAL")
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

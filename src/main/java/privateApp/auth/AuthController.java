@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import privateApp.dtos.AuthenticationResponse;
 import privateApp.dtos.ChangePasswordRequest;
 import privateApp.dtos.LoginRequest;
+import privateApp.models.Profil;
 import privateApp.models.User;
 import privateApp.services.UserService;
 
@@ -26,23 +27,24 @@ public class AuthController {
 //Vérifie les identifiants. Si le mot de passe est expiré, demande un changement ; sinon, redirige vers l’URL du profil.
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-      try {
-        String token = userService.authenticate(request.getUserId(), request.getPassword());
-        User user = userService.findUserById(request.getUserId());
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("message", user.isPasswordExpired() 
-          ? "Mot de passe expiré, veuillez le changer." 
-          : "Connexion réussie, redirection vers : " + user.getProfil().getUrl());
-        response.put("authorities", user.getAuthorities().stream()
-          .map(auth -> Map.of("authority", auth.getAuthority()))
-          .collect(Collectors.toList()));
-        System.out.println("Réponse login: " + response); // Log pour débogage
-        return ResponseEntity.ok(response);
-      } catch (RuntimeException e) {
-        System.out.println("Erreur login: " + e.getMessage()); // Log pour débogage
-        return ResponseEntity.status(401).body("Identifiants incorrects");
-      }
+        try {
+            String token = userService.authenticate(request.getUserId(), request.getPassword());
+            User user = userService.findUserById(request.getUserId());
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("message", user.isPasswordExpired() 
+                ? "Mot de passe expiré, veuillez le changer." 
+                : "Connexion réussie");
+            response.put("authorities", user.getAuthorities().stream()
+                .map(auth -> Map.of("authority", auth.getAuthority()))
+                .collect(Collectors.toList()));
+            response.put("urls", user.getProfils().stream()
+                .map(Profil::getUrl)
+                .collect(Collectors.toList()));
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body("Identifiants incorrects");
+        }
     }
 //Met à jour le mot de passe après vérification de confirmation.
     @PostMapping("/change-password")
