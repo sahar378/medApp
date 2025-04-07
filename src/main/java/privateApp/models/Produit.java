@@ -2,6 +2,9 @@ package privateApp.models;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "produit")
@@ -29,8 +32,20 @@ public class Produit {
 
     @Column(name = "archive", nullable = false) // Nouveau champ
     private boolean archive = false; // Par défaut, pas archivé
+    
+    @ManyToMany(mappedBy = "produits")
+    @JsonIgnore
+    private List<Fournisseur> fournisseurs;
 
-    // Constructeurs
+    public List<Fournisseur> getFournisseurs() {
+		return fournisseurs;
+	}
+
+	public void setFournisseurs(List<Fournisseur> fournisseurs) {
+		this.fournisseurs = fournisseurs;
+	}
+
+	// Constructeurs
     public Produit() {}
 
     // Getters et Setters

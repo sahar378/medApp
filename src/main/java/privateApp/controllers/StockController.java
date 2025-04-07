@@ -6,7 +6,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import privateApp.dtos.ProduitAlerteDTO;
 import privateApp.exception.ApiError;
+import privateApp.models.Fournisseur;
+import privateApp.models.Livraison;
 import privateApp.models.Produit;
 import privateApp.models.ProduitLog;
 import privateApp.repositories.ProduitLogRepository;
@@ -50,8 +53,41 @@ public class StockController {
 
     @GetMapping("/produits")
     @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
-    public ResponseEntity<List<Produit>> getProduits() { // Retiré userId
-        return ResponseEntity.ok(stockService.getProduits());
+    public ResponseEntity<List<Produit>> getProduits(
+            @RequestParam(required = false) Long categorie) { // Ajout du paramètre categorie
+        if (categorie != null) {
+            return ResponseEntity.ok(stockService.getProduitsByCategorie(categorie));
+        }
+        return ResponseEntity.ok(stockService.getProduits()); // Si pas de catégorie, renvoie tous les produits
+    }
+    @GetMapping("/produits/archives")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<Produit>> getArchivedProduits() {
+        return ResponseEntity.ok(stockService.getArchivedProduits());
+    }
+    
+    @GetMapping("/produits/active/medicaments")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<Produit>> getActiveMedicaments() {
+        return ResponseEntity.ok(stockService.getActiveMedicaments());
+    }
+
+    @GetMapping("/produits/active/materiels")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<Produit>> getActiveMateriels() {
+        return ResponseEntity.ok(stockService.getActiveMateriels());
+    }
+
+    @GetMapping("/produits/archived/medicaments")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<Produit>> getArchivedMedicaments() {
+        return ResponseEntity.ok(stockService.getArchivedMedicaments());
+    }
+
+    @GetMapping("/produits/archived/materiels")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<Produit>> getArchivedMateriels() {
+        return ResponseEntity.ok(stockService.getArchivedMateriels());
     }
 
     @GetMapping("/all")
@@ -83,8 +119,19 @@ public class StockController {
 
     @GetMapping("/alertes")
     @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
-    public ResponseEntity<List<Produit>> verifierAlertes() { // Retiré userId
+    public ResponseEntity<List<ProduitAlerteDTO>> verifierAlertes() {
         return ResponseEntity.ok(stockService.verifierAlertes());
+    }
+    
+    @GetMapping("/alertes/medicaments")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<ProduitAlerteDTO>> verifierAlertesMedicaments() {
+        return ResponseEntity.ok(stockService.verifierAlertesMedicaments());
+    }
+    @GetMapping("/alertes/materiels")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<ProduitAlerteDTO>> verifierAlertesMateriels() {
+        return ResponseEntity.ok(stockService.verifierAlertesMateriels());
     }
 
     @DeleteMapping("/produit/{produitId}")
@@ -102,5 +149,12 @@ public class StockController {
     @PreAuthorize("hasAuthority('INTENDANT')")
     public List<ProduitLog> getProduitLogs(@RequestParam Long produitId) {
         return produitLogRepository.findByProduitIdProduit(produitId);
+    }
+    
+    @GetMapping("/produit/{produitId}/fournisseurs")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Fournisseur>> getFournisseursByProduit(@PathVariable Long produitId) {
+        Produit produit = stockService.getProduitById(produitId);
+        return ResponseEntity.ok(produit.getFournisseurs());
     }
 }

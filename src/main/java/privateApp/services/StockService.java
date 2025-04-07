@@ -1,17 +1,22 @@
 package privateApp.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.CrudRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import privateApp.models.Categorie;
-import privateApp.models.Produit;
-import privateApp.models.ProduitLog;
-import privateApp.models.User;
+import org.springframework.transaction.annotation.Transactional;
+
+import privateApp.dtos.ProduitAlerteDTO;
+import privateApp.models.*;
 import privateApp.repositories.CategorieRepository;
 import privateApp.repositories.ProduitLogRepository;
 import privateApp.repositories.ProduitRepository;
+import privateApp.repositories.LivraisonRepository;
+import privateApp.repositories.NotificationRepository;
 import privateApp.repositories.UserRepository;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -25,13 +30,20 @@ public class StockService {
 
     @Autowired
     private CategorieRepository categorieRepository;
-
+    
+    @Autowired
+    private NotificationRepository notificationRepository;
+    
     @Autowired
     private ProduitLogRepository produitLogRepository;
-    
- // Ajouter un nouveau produit : Crée un produit ou réactive un archivé, bloque les doublons actifs.
+
+ 
+	private UserRepository userRepository;
+
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
+
+    // Ajouter un nouveau produit
     public Produit addProduit(Produit produit) {
-        // Vérifier les doublons pour un produit actif
         Optional<Produit> existingProduit = produitRepository.findByNomAndCategorieIdCategorie(
             produit.getNom(), produit.getCategorie().getIdCategorie()
         );
@@ -39,7 +51,6 @@ public class StockService {
         if (existingProduit.isPresent()) {
             Produit archivedProduit = existingProduit.get();
             if (archivedProduit.isArchive()) {
-                // Réactiver un produit archivé
                 archivedProduit.setArchive(false);
                 archivedProduit.setDescription(produit.getDescription());
                 archivedProduit.setQteDisponible(produit.getQteDisponible());
@@ -49,21 +60,24 @@ public class StockService {
                 logAction(updatedProduit, "UNARCHIVE", "Produit désarchivé et mis à jour");
                 return updatedProduit;
             } else {
-            	throw new IllegalArgumentException("Un produit actif avec ce nom existe déjà. Veuillez modifier le produit existant.");            }
+                throw new IllegalArgumentException("Un produit actif avec ce nom existe déjà.");
+            }
         }
 
-        // Créer un nouveau produit
         Produit savedProduit = produitRepository.save(produit);
         logAction(savedProduit, "CREATE", "Produit créé - Quantité: " + savedProduit.getQteDisponible());
         return savedProduit;
     }
 
-    // Mettre à jour un produit existant : Modifie un produit existant sans se soucier des doublons.
+    // Mettre à jour un produit existant
     public Produit updateProduit(Produit produit) {
         Produit existingProduit = produitRepository.findById(produit.getIdProduit())
             .orElseThrow(() -> new RuntimeException("Produit non trouvé pour mise à jour"));
 
-        // Mettre à jour les champs
+        int ancienneQuantite = existingProduit.getQteDisponible();
+        int ancienSeuil = existingProduit.getSeuilAlerte();
+        Date ancienneDateExpiration = existingProduit.getDateExpiration();
+
         existingProduit.setNom(produit.getNom());
         existingProduit.setDescription(produit.getDescription());
         existingProduit.setQteDisponible(produit.getQteDisponible());
@@ -72,22 +86,50 @@ public class StockService {
         existingProduit.setCategorie(produit.getCategorie());
 
         Produit updatedProduit = produitRepository.save(existingProduit);
-        logAction(updatedProduit, "UPDATE", "Produit mis à jour - Quantité: " + updatedProduit.getQteDisponible());
+
+        StringBuilder logDetails = new StringBuilder();
+        if (ancienneQuantite != updatedProduit.getQteDisponible()) {
+            logDetails.append("Quantité: ").append(ancienneQuantite).append(" -> ").append(updatedProduit.getQteDisponible()).append(", ");
+        }
+        if (ancienSeuil != updatedProduit.getSeuilAlerte()) {
+            logDetails.append("Seuil: ").append(ancienSeuil).append(" -> ").append(updatedProduit.getSeuilAlerte()).append(", ");
+        }
+        if (ancienneDateExpiration != null && updatedProduit.getDateExpiration() != null) {
+            String ancienneDateStr = DATE_FORMAT.format(ancienneDateExpiration);
+            String nouvelleDateStr = DATE_FORMAT.format(updatedProduit.getDateExpiration());
+            if (!ancienneDateStr.equals(nouvelleDateStr)) {
+                logDetails.append("Date d'expiration: ").append(ancienneDateStr).append(" -> ").append(nouvelleDateStr);
+            }
+        }
+
+        if (logDetails.length() > 0 && logDetails.lastIndexOf(", ") == logDetails.length() - 2) {
+            logDetails.setLength(logDetails.length() - 2);
+        }
+
+        if (logDetails.length() > 0) {
+            logAction(updatedProduit, "UPDATE", logDetails.toString());
+        }
+
         return updatedProduit;
     }
- // Modifier getProduits pour ne retourner que les produits non archivés
+
     public List<Produit> getProduits() {
         return produitRepository.findByArchiveFalse();
     }
+    
+    public List<Produit> getProduitsByCategorie(Long idCategorie) {
+        return produitRepository.findByArchiveFalseAndCategorieIdCategorie(idCategorie);
+    }
 
-    public List<Produit> getAllProduits() { // pour l’intendant , doit voir tous les produits (archivés ou non)
+    public List<Produit> getAllProduits() {
         return produitRepository.findAll();
     }
+
     public Produit getProduitById(Long produitId) {
         return produitRepository.findById(produitId)
             .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
     }
-    
+
     public void definirSeuilAlerte(Long produitId, int nombreMalades) {
         Produit produit = produitRepository.findById(produitId)
                 .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
@@ -99,53 +141,116 @@ public class StockService {
         produitRepository.save(produit);
     }
 
-    public void definirSeuilsCategorie(int idCategorie, int nombreMalades) { // Retiré userId
+    public void definirSeuilsCategorie(int idCategorie, int nombreMalades) {
         List<Produit> produits = produitRepository.findByCategorieIdCategorie(idCategorie);
         for (Produit produit : produits) {
-            if (idCategorie == 1) { // Matériel
+            if (idCategorie == 1) {
                 produit.setSeuilAlerte(calculerSeuilMateriel(nombreMalades));
-            } else if (idCategorie == 2) { // Médicament
+            } else if (idCategorie == 2) {
                 produit.setSeuilAlerte(calculerSeuilMedicament());
             }
             produitRepository.save(produit);
         }
     }
 
- // Méthode pour vérifier les alertes (quantité et expiration)
-    public List<Produit> verifierAlertes() {
+    public List<ProduitAlerteDTO> verifierAlertes() {
         List<Produit> produitsActifs = produitRepository.findByArchiveFalse();
         Date today = new Date();
 
         return produitsActifs.stream()
-            .filter(produit -> {
-                // Condition pour les matériels (idCategorie = 1)
-                if (produit.getCategorie().getIdCategorie() == 1) {
-                    return produit.getQteDisponible() <= produit.getSeuilAlerte();
+            .map(produit -> {
+                List<String> messages = new ArrayList<>();
+
+                if (produit.getCategorie().getIdCategorie() == 1) { // Matériel
+                    if (produit.getQteDisponible() <= produit.getSeuilAlerte()) {
+                        messages.add(String.format("%s - Quantité: %d (Seuil: %d)",
+                            produit.getNom(), produit.getQteDisponible(), produit.getSeuilAlerte()));
+                    }
+                } else if (produit.getCategorie().getIdCategorie() == 2) { // Médicaments
+                    boolean isExpired = produit.getDateExpiration() != null && produit.getDateExpiration().before(today);
+                    boolean isOneLeft = produit.getQteDisponible() == 1;
+                    boolean isLowStock = produit.getQteDisponible() <= produit.getSeuilAlerte() && !isOneLeft;
+
+                    if (isExpired) {
+                        messages.add(String.format("%s - Expiré le: %s",
+                            produit.getNom(), DATE_FORMAT.format(produit.getDateExpiration())));
+                    }
+                    if (isOneLeft) {
+                        String expirationDate = produit.getDateExpiration() != null
+                            ? DATE_FORMAT.format(produit.getDateExpiration())
+                            : "-";
+                        messages.add(String.format("%s - Quantité restante: 1 (Expire le: %s)",
+                            produit.getNom(), expirationDate));
+                    } else if (isLowStock) {
+                        messages.add(String.format("%s - Quantité: %d (Seuil: %d)",
+                            produit.getNom(), produit.getQteDisponible(), produit.getSeuilAlerte()));
+                    }
                 }
-                // Condition pour les médicaments (idCategorie = 2)
-                else if (produit.getCategorie().getIdCategorie() == 2) {
-                    boolean quantiteBasse = produit.getQteDisponible() <= produit.getSeuilAlerte();
-                 // Vérifie si le produit est expiré (date d’expiration avant aujourd’hui)
-                    boolean expire = produit.getDateExpiration() != null && produit.getDateExpiration().before(today);
-                    return quantiteBasse || expire; // On retire quantiteEgaleUn car inclus dans quantiteBasse si seuil = 1
-                }
-                return false; // Par défaut, pas d’alerte
+
+                return messages.isEmpty() ? null : new ProduitAlerteDTO(produit, messages);
             })
+            .filter(dto -> dto != null) // Filtrer les DTO sans messages
+            .collect(Collectors.toList());
+    }
+    
+    public List<ProduitAlerteDTO> verifierAlertesMedicaments() {
+        List<Produit> produitsActifs = produitRepository.findByArchiveFalseAndCategorieIdCategorie(2L);
+        Date today = new Date();
+
+        return produitsActifs.stream()
+            .map(produit -> {
+                List<String> messages = new ArrayList<>();
+
+                boolean isExpired = produit.getDateExpiration() != null && produit.getDateExpiration().before(today);
+                boolean isOneLeft = produit.getQteDisponible() == 1;
+                boolean isLowStock = produit.getQteDisponible() <= produit.getSeuilAlerte() && !isOneLeft;
+
+                if (isExpired) {
+                    messages.add(String.format("%s - Expiré le: %s",
+                        produit.getNom(), DATE_FORMAT.format(produit.getDateExpiration())));
+                }
+                if (isOneLeft) {
+                    String expirationDate = produit.getDateExpiration() != null
+                        ? DATE_FORMAT.format(produit.getDateExpiration())
+                        : "-";
+                    messages.add(String.format("%s - Quantité restante: 1 (Expire le: %s)",
+                        produit.getNom(), expirationDate));
+                } else if (isLowStock) {
+                    messages.add(String.format("%s - Quantité: %d (Seuil: %d)",
+                        produit.getNom(), produit.getQteDisponible(), produit.getSeuilAlerte()));
+                }
+
+                return messages.isEmpty() ? null : new ProduitAlerteDTO(produit, messages);
+            })
+            .filter(dto -> dto != null)
+            .collect(Collectors.toList());
+    }
+    
+    public List<ProduitAlerteDTO> verifierAlertesMateriels() {
+        List<Produit> produitsActifs = produitRepository.findByArchiveFalseAndCategorieIdCategorie(1L);
+        return produitsActifs.stream()
+            .map(produit -> {
+                List<String> messages = new ArrayList<>();
+
+                if (produit.getQteDisponible() <= produit.getSeuilAlerte()) {
+                    messages.add(String.format("%s - Quantité: %d (Seuil: %d)",
+                        produit.getNom(), produit.getQteDisponible(), produit.getSeuilAlerte()));
+                }
+
+                return messages.isEmpty() ? null : new ProduitAlerteDTO(produit, messages);
+            })
+            .filter(dto -> dto != null)
             .collect(Collectors.toList());
     }
 
     public void deleteProduit(Long produitId) {
         Produit produit = produitRepository.findById(produitId)
             .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
-
-        // Marquer le produit comme archivé au lieu de le supprimer
         produit.setArchive(true);
         produitRepository.save(produit);
-
-        // Enregistrer l’action dans produit_log
         logAction(produit, "ARCHIVE", "Produit archivé - Quantité: " + produit.getQteDisponible());
     }
- // Méthode pour enregistrer un log
+
     private void logAction(Produit produit, String action, String details) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         ProduitLog log = new ProduitLog();
@@ -155,16 +260,39 @@ public class StockService {
         log.setDetails(details);
         produitLogRepository.save(log);
     }
-    // Méthodes de calcul des seuils inchangées
+
     public int calculerSeuilMateriel(int nombreMalades) {
         int seancesParMois = 13;
         int moisCommande = 3;
         int consommationMensuelle = nombreMalades * seancesParMois;
-        int seuilCommande = consommationMensuelle * moisCommande + nombreMalades;
-        return consommationMensuelle / 2; // Seuil alerte
+        return consommationMensuelle / 2;
     }
 
     public int calculerSeuilMedicament() {
         return 1;
+    }
+
+    public List<Produit> getArchivedProduits() {
+        return produitRepository.findByArchiveTrue();
+    }
+
+    public List<Produit> getActiveMedicaments() {
+        return produitRepository.findByArchiveFalseAndCategorieIdCategorie(2L);
+    }
+
+    public List<Produit> getActiveMateriels() {
+        return produitRepository.findByArchiveFalseAndCategorieIdCategorie(1L);
+    }
+
+    public List<Produit> getArchivedMedicaments() {
+        return produitRepository.findByArchiveTrueAndCategorieIdCategorie(2L);
+    }
+
+    public List<Produit> getArchivedMateriels() {
+        return produitRepository.findByArchiveTrueAndCategorieIdCategorie(1L);
+    }
+ // Dans StockService.java
+    public List<Produit> getProduitsForInventaire() {
+        return produitRepository.findByArchiveFalse();
     }
 }

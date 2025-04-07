@@ -45,6 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Vérification si le token existe et n’est pas déjà invalidé
         if (tokenEntityOptional.isEmpty() || tokenEntityOptional.get().isLoggedOut()) {
+        	System.out.println("Token not found in database: " + token);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token invalid or not found");
             return;
@@ -54,26 +55,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         var tokenEntity = tokenEntityOptional.get();
 
         // Vérification si le token est expiré
-        if (jwtService.isTokenExpired(token)) {
+        try {
+            // Vérification de l’expiration
+            if (jwtService.isTokenExpired(token)) {
+                tokenEntity.setLoggedOut(true);
+                tokenEntity.setLogoutTimestamp(new Date());
+                tokenRepository.save(tokenEntity);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token expired");
+                return;
+            }
+
+            // Authentification si valide
+            String userId = jwtService.extractUserId(token);
+            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+                if (jwtService.isValid(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+            filterChain.doFilter(request, response);
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            // Cas où le token est expiré (exception levée par JwtService)
             tokenEntity.setLoggedOut(true);
             tokenEntity.setLogoutTimestamp(new Date());
             tokenRepository.save(tokenEntity);
+            System.out.println("Saving token as logged out: " + tokenEntity.getToken());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token expired");
-            return;
+        } catch (Exception e) {
+        	System.out.println("Erreur de validation du token: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            // Autres erreurs (par exemple, token mal formé)
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid token");
         }
-
-        // Si le token est valide, procéder à l’authentification
-        String userId = jwtService.extractUserId(token);
-        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
-            if (jwtService.isValid(token, userDetails)) {
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        }
-        filterChain.doFilter(request, response);
-    }
+       }
 }

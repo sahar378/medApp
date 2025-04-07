@@ -51,13 +51,50 @@ public class SecurityConfig {
                     return corsConfiguration;
                 }))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Public pour login/logout/change-password
-                        .requestMatchers("/api/test/generate-hash").permitAll() // Public pour generate-hash
-                        .requestMatchers("/api/intendant/**").hasAuthority("INTENDANT") // Réservé à l'intendant
-                        .requestMatchers(HttpMethod.GET, "/api/stock/logs").hasAuthority("INTENDANT") // Logs réservés à l'intendant
-                        .requestMatchers(HttpMethod.GET, "/api/stock/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Autres GET pour les deux rôles
-                        .requestMatchers("/api/stock/**").hasAuthority("RESPONSABLE_STOCK") // POST, PUT, DELETE pour RESPONSABLE_STOCK
-                        .requestMatchers("/api/medical/**").hasAuthority("PERSONNEL_MEDICAL")
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/test/generate-hash").permitAll()
+                        // Intendant
+                        .requestMatchers("/api/intendant/**").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.GET, "/api/stock/logs").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/*/approuver").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/*/envoyer").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/*/annuler").hasAuthority("INTENDANT")
+                        // Stock
+                        .requestMatchers(HttpMethod.GET, "/api/stock/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.GET, "/api/stock/alertes/medicaments").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Ajout explicite
+                        .requestMatchers(HttpMethod.GET, "/api/stock/alertes/materiels").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Ajout explicite
+                        .requestMatchers(HttpMethod.POST, "/api/stock/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.PUT, "/api/stock/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.DELETE, "/api/stock/**").hasAuthority("RESPONSABLE_STOCK")
+                        // Commandes
+                        .requestMatchers(HttpMethod.GET, "/api/commande/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/creer").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/creer-multi").hasAuthority("RESPONSABLE_STOCK") 
+                        
+                        .requestMatchers(HttpMethod.PUT, "/api/commande/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.POST, "/api/commande/livraison").hasAuthority("RESPONSABLE_STOCK")
+                     // Livraisons
+                        .requestMatchers(HttpMethod.POST, "/api/livraisons").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.GET, "/api/livraisons").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.GET, "/api/livraisons/{produitId}").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        // Fournisseurs
+                        .requestMatchers(HttpMethod.GET, "/api/fournisseurs/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.POST, "/api/fournisseurs/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.PUT, "/api/fournisseurs/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.DELETE, "/api/fournisseurs/**").hasAuthority("RESPONSABLE_STOCK")
+                     // Prix (Nouveau)
+                        .requestMatchers(HttpMethod.GET, "/api/prix/**").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.POST, "/api/prix/signaler").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/prix/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.PUT, "/api/prix/**").hasAuthority("RESPONSABLE_STOCK")
+                        .requestMatchers(HttpMethod.DELETE, "/api/prix/**").hasAuthority("RESPONSABLE_STOCK")
+                       // .requestMatchers(HttpMethod.POST, "/api/prix/signaler").hasAuthority("INTENDANT")
+                        .requestMatchers(HttpMethod.GET, "/api/prix/produits").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
+                     // Medical
+                        .requestMatchers(HttpMethod.GET, "/api/medical/produits").hasAuthority("PERSONNEL_MEDICAL") // Pour faire l'inventaire
+                        .requestMatchers(HttpMethod.POST, "/api/medical/inventaire/verifier").hasAuthority("PERSONNEL_MEDICAL") // Vérification par le personnel médical
+                        .requestMatchers(HttpMethod.GET, "/api/medical/inventaire/historique").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Historique pour INTENDANT et RESPONSABLE_STOCK
+                        .requestMatchers(HttpMethod.GET, "/api/medical/inventaire/{id}").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Détails pour INTENDANT et RESPONSABLE_STOCK
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
