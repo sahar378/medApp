@@ -49,6 +49,10 @@ public class BonCommande {
     @JoinColumn(name = "modified_by", nullable = true)
     private User modifiedBy; // Nouveau champ pour le modificateur
 
+    @OneToMany(mappedBy = "bonCommande", cascade = CascadeType.ALL) // Nouvelle relation
+    @JsonManagedReference // Sérialise cette relation
+    private List<EnvoiBonCommande> envois; // Liste des envois associés
+    
     // Constructeurs
     public BonCommande() {}
 
@@ -75,4 +79,6 @@ public class BonCommande {
     public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
     public User getModifiedBy() { return modifiedBy; }
     public void setModifiedBy(User modifiedBy) { this.modifiedBy = modifiedBy; }
+    public List<EnvoiBonCommande> getEnvois() { return envois; }
+    public void setEnvois(List<EnvoiBonCommande> envois) { this.envois = envois; }
 }

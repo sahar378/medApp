@@ -39,6 +39,8 @@ public class CommandeService {
 
     @Autowired
     private PrixRepository prixRepository;
+    @Autowired
+    private EnvoiBonCommandeRepository envoiBonCommandeRepository;
 
     
     // Méthode utilitaire pour interpréter le prix unitaire
@@ -324,6 +326,11 @@ Crée un bon de commande uniquement avec des fournisseurs actifs et des prix val
 
         bonCommande.setEtat("envoyé");
         BonCommande updatedBon = bonCommandeRepository.save(bonCommande);
+
+        // Enregistrement dans la table EnvoiBonCommande
+        User sentBy = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        EnvoiBonCommande envoi = new EnvoiBonCommande(sentBy, bonCommande.getFournisseur(), new Date(), updatedBon);
+        envoiBonCommandeRepository.save(envoi);
 
         try {
             emailService.sendBonCommandeEmail(updatedBon);

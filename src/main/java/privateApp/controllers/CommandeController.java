@@ -161,6 +161,13 @@ public class CommandeController {
           .orElseThrow(() -> new RuntimeException("Prix actif non trouvé"));
       return ResponseEntity.ok(prix);
     }
+    @GetMapping("/bon/{id}")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<BonCommande> getBonCommandeDetails(@PathVariable Long id) {
+        BonCommande bonCommande = bonCommandeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Bon de commande non trouvé"));
+        return ResponseEntity.ok(bonCommande);
+    }
 
     // Enregistrer une livraison (Responsable Stock)
    /* @PostMapping("/livraison")

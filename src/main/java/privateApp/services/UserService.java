@@ -40,10 +40,10 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
  // Méthode temporaire pour générer le hachage de "intendant123"
     public void generateHashForIntendant() {
-        String rawPassword = "temp123";
+        String rawPassword = "superadmin123";
         String hashedPassword = passwordEncoder.encode(rawPassword);
-        System.out.println("Hachage pour 'temp123' : " + hashedPassword);
-        logger.info("Hachage pour 'temp123' : {}", hashedPassword); // Log supplémentaire
+        System.out.println("Hachage pour 'superadmin123' : " + hashedPassword);
+        logger.info("Hachage pour 'superadmin123' : {}", hashedPassword); // Log supplémentaire
     }
     
   //Récupère un utilisateur par son matricule.
@@ -218,6 +218,10 @@ public class UserService {
         return userRepository.findAll().stream()
                 .filter(user -> user.getPassword() == null || user.getPassword().isEmpty())
                 .collect(Collectors.toList());
+    }
+ // Nouvelle méthode pour sauvegarder un utilisateur
+    public void save(User user) {
+        userRepository.save(user);
     }
     
 }

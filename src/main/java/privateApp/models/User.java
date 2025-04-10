@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 @Table(name = "users")
 public class User implements UserDetails {
     @Id
-    private Long userId; // matricule comme identifiant
+    private Long userId;
     private String password;
     private boolean isPasswordExpired = true;
     private String nom;
@@ -25,14 +25,16 @@ public class User implements UserDetails {
     private Date dateNaissance;
     private String numeroTelephone;
 
-    // Relation ManyToMany avec Profil
+    @Column(name = "statut", nullable = false)
+    private boolean statut = true; // Par défaut true pour ne pas affecter les autres utilisateurs
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_profil",
         joinColumns = @JoinColumn(name = "user_id"),
         inverseJoinColumns = @JoinColumn(name = "id_profil")
     )
-    private Set<Profil> profils = new HashSet<>(); // Set pour éviter les doublons
+    private Set<Profil> profils = new HashSet<>();
 
     // Getters et Setters
     public Long getUserId() { return userId; }
@@ -55,6 +57,8 @@ public class User implements UserDetails {
     public void setProfils(Set<Profil> profils) { this.profils = profils; }
     public void addProfil(Profil profil) { this.profils.add(profil); }
     public void removeProfil(Profil profil) { this.profils.remove(profil); }
+    public boolean isStatut() { return statut; }
+    public void setStatut(boolean statut) { this.statut = statut; }
 
     // Implémentation de UserDetails
     @Override
@@ -75,6 +79,17 @@ public class User implements UserDetails {
     public boolean isAccountNonLocked() { return true; }
     @Override
     public boolean isCredentialsNonExpired() { return true; }
+
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        // Vérifie si l'utilisateur est un intendant
+        boolean isIntendant = getAuthorities().stream()
+            .anyMatch(auth -> auth.getAuthority().equals("INTENDANT"));
+        // Si c'est un intendant, le statut détermine l'activation
+        // Sinon, le compte reste actif comme avant
+        return !isIntendant || statut;
+    }
+    /*Les utilisateurs existants (non-intendants) ont statut = true ou n’ont pas de rôle INTENDANT, donc isEnabled() retourne true comme avant.
+Les intendants nouvellement créés ont statut = false, donc isEnabled() retourne false, bloquant leur accès jusqu’à activation.
+Les intendants activés (statut = true) auront isEnabled() = true, permettant l’accès.*/
 }

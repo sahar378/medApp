@@ -24,15 +24,27 @@ public class EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
         message.setSubject("Vos identifiants pour PrivateApp");
+        StringBuilder emailBody = new StringBuilder();
+        emailBody.append("Bonjour ").append(prenom).append(" ").append(nom).append(",\n\n")
+                 .append("Voici vos identifiants pour accéder à l'application PrivateApp :\n")
+                 .append("Matricule (userId) : ").append(userId).append("\n")
+                 .append("Mot de passe temporaire : ").append(tempPassword).append("\n\n")
+                 .append("Ce mot de passe est temporaire. Veuillez le modifier après votre première connexion à l'application.\n")
+                 .append("Cordialement,\nL'équipe de support");
+        message.setText(emailBody.toString());
+        message.setFrom(fromEmail);
+        mailSender.send(message);
+    }
+    public void sendStatusChangeEmail(String toEmail, String subject, String body, String nom, String prenom) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(toEmail);
+        message.setSubject(subject);
         message.setText(
             "Bonjour " + prenom + " " + nom + ",\n\n" +
-            "Vos identifiants pour accéder à l'application PrivateApp ont été créés :\n" +
-            "Matricule (userId) : " + userId + "\n" +
-            "Mot de passe temporaire : " + tempPassword + "\n\n" +
-            "Veuillez vous connecter à l'application et changer votre mot de passe dès que possible.\n" +
+            body + "\n\n" +
             "Cordialement,\nL'équipe de support"
         );
-        message.setFrom(fromEmail); // Utilise la valeur injectée
+        message.setFrom(fromEmail);
         mailSender.send(message);
     }
     public void sendBonCommandeEmail(BonCommande bonCommande) throws MailSendException {

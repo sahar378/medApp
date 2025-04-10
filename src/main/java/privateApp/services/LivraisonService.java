@@ -19,6 +19,7 @@ import privateApp.repositories.LivraisonRepository;
 import privateApp.repositories.ProduitLogRepository;
 import privateApp.repositories.ProduitRepository;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -88,6 +89,36 @@ public class LivraisonService {
     public List<Livraison> getLivraisonsByProduit(Long idProduit) {
         return livraisonRepository.findByProduitIdProduit(idProduit);
     }
+    
+ // Nouvelle méthode pour les 7 dernières livraisons
+    public List<Livraison> getLastSevenLivraisons() {
+        List<Livraison> allLivraisons = livraisonRepository.findAllByOrderByIdLivraisonDesc();
+        logger.info("Récupération des 7 dernières livraisons parmi {}", allLivraisons.size());
+        return allLivraisons.stream()
+                .limit(7)
+                .collect(Collectors.toList());
+    }
+ // Nouvelle méthode : Livraisons par fournisseur
+    public List<Livraison> getLivraisonsByFournisseur(Long idFournisseur) {
+        List<Livraison> livraisons = livraisonRepository.findByFournisseurIdFournisseurOrderByIdLivraisonDesc(idFournisseur);
+        logger.info("Récupération de {} livraisons pour le fournisseur ID {}", livraisons.size(), idFournisseur);
+        return livraisons;
+    }
+
+    // Nouvelle méthode : Livraisons par date
+    public List<Livraison> getLivraisonsByDate(Date date) {
+        List<Livraison> livraisons = livraisonRepository.findByDateOrderByIdLivraisonDesc(date);
+        logger.info("Récupération de {} livraisons pour la date {}", livraisons.size(), date);
+        return livraisons;
+    }
+
+    // Nouvelle méthode : Livraisons par fournisseur et date
+    public List<Livraison> getLivraisonsByFournisseurAndDate(Long idFournisseur, Date date) {
+        List<Livraison> livraisons = livraisonRepository.findByFournisseurIdFournisseurAndDateOrderByIdLivraisonDesc(idFournisseur, date);
+        logger.info("Récupération de {} livraisons pour le fournisseur ID {} et la date {}", livraisons.size(), idFournisseur, date);
+        return livraisons;
+    }
+    
     private void logAction(Produit produit, String action, String details) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         ProduitLog log = new ProduitLog();

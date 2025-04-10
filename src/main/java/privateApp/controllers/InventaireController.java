@@ -29,6 +29,11 @@ public class InventaireController {
     public ResponseEntity<List<Inventaire>> getAllInventaires() {
         return ResponseEntity.ok(inventaireService.getAllInventaires());
     }
+    @GetMapping("/historique/last-four")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Inventaire>> getLastFourInventaires() {
+        return ResponseEntity.ok(inventaireService.getLastFourInventaires());
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")

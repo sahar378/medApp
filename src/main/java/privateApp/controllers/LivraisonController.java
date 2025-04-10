@@ -2,6 +2,7 @@
 package privateApp.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +16,7 @@ import privateApp.services.LivraisonService;
 import privateApp.repositories.FournisseurRepository;
 import privateApp.repositories.ProduitRepository;
 
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -82,5 +84,35 @@ public class LivraisonController {
                 .max()
                 .getAsLong();
         return ResponseEntity.ok(lastId);
+    }
+    
+ // Nouvel endpoint pour les 7 dernières livraisons
+    @GetMapping("/last-seven")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Livraison>> getLastSevenLivraisons() {
+        return ResponseEntity.ok(livraisonService.getLastSevenLivraisons());
+    }
+ // Nouvel endpoint : Filtre par fournisseur
+    @GetMapping("/by-fournisseur/{idFournisseur}")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Livraison>> getLivraisonsByFournisseur(@PathVariable Long idFournisseur) {
+        return ResponseEntity.ok(livraisonService.getLivraisonsByFournisseur(idFournisseur));
+    }
+
+    // Nouvel endpoint : Filtre par date
+    @GetMapping("/by-date")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Livraison>> getLivraisonsByDate(
+            @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+        return ResponseEntity.ok(livraisonService.getLivraisonsByDate(date));
+    }
+
+    // Nouvel endpoint : Filtre par fournisseur et date
+    @GetMapping("/by-fournisseur-and-date")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Livraison>> getLivraisonsByFournisseurAndDate(
+            @RequestParam("idFournisseur") Long idFournisseur,
+            @RequestParam("date") @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
+        return ResponseEntity.ok(livraisonService.getLivraisonsByFournisseurAndDate(idFournisseur, date));
     }
 }

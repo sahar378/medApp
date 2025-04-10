@@ -1,6 +1,8 @@
 package privateApp.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,5 +74,11 @@ public class InventaireService {
     public Inventaire getInventaireById(Long id) {
         return inventaireRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Inventaire non trouvé"));
+    }
+ // Nouvelle méthode pour récupérer les 4 derniers inventaires
+    public List<Inventaire> getLastFourInventaires() {
+        // Tri par date décroissante, limité à 4 éléments
+        return inventaireRepository.findAll(PageRequest.of(0, 4, Sort.by("date").descending()))
+                .getContent();
     }
 }
