@@ -10,6 +10,7 @@ public class Profil {
     private Long idProfil;
     private String libelleProfil; // Ex. "Responsable de stock"
     private String url; // URL de redirection
+    private String descriptifAffiche; // Descriptif affiché
 
     // Getters et Setters
     public Long getIdProfil() { return idProfil; }
@@ -18,4 +19,6 @@ public class Profil {
     public void setLibelleProfil(String libelleProfil) { this.libelleProfil = libelleProfil; }
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
+    public String getDescriptifAffiche() { return descriptifAffiche; }
+    public void setDescriptifAffiche(String descriptifAffiche) { this.descriptifAffiche = descriptifAffiche; }
 }

@@ -38,6 +38,8 @@ public class UserService {
     @Autowired
     private EmailService emailService;
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    
+    
  // Méthode temporaire pour générer le hachage de "intendant123"
     public void generateHashForIntendant() {
         String rawPassword = "superadmin123";
@@ -51,7 +53,7 @@ public class UserService {
         return userRepository.findByUserId(userId).orElse(null);
     }
     
- // Nouvelle méthode pour mettre à jour le profil de l'utilisateur
+ // méthode pour mettre à jour le profil de l'utilisateur
     public void updateUserProfile(Long userId, String nom, String prenom, String email, Date dateNaissance, String numeroTelephone) {
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé pour userId : " + userId));
@@ -84,11 +86,6 @@ public class UserService {
   //Réinitialise le mot de passe (haché) et marque isPasswordExpired comme vrai.
     public void resetPassword(Long userId, String tempPassword) {
     	logger.info("Mot de passe avant hachage pour userId {} : {}", userId, tempPassword);
-       /* User user = userRepository.findByUserId(userId).orElse(null);
-        if (user == null) {
-            user = new User();
-            user.setUserId(userId);
-        }*/
     	User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé pour userId : " + userId));
         user.setPassword(passwordEncoder.encode(tempPassword));
@@ -124,7 +121,7 @@ public class UserService {
             }
         }
     }
-    
+    /*
  // Assigner plusieurs rôles à un utilisateur
     public void assignRoles(Long userId, Set<Long> profilIds) {
         User user = userRepository.findByUserId(userId)
@@ -135,8 +132,46 @@ public class UserService {
             .collect(Collectors.toSet());
         user.setProfils(profils);
         userRepository.save(user);
-    }
+    }*/
     
+ // Assigner plusieurs rôles à un utilisateur avec validation d'héritage
+    //La logique d'héritage des rôles (PERSONNEL_MEDICAL nécessitant MEDECIN ou INFIRMIER)
+    public void assignRoles(Long userId, Set<Long> profilIds) {
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        List<Profil> allProfils = profilRepository.findAll();
+        Set<Profil> profilsToAssign = profilIds.stream()
+            .map(profilId -> allProfils.stream()
+                .filter(p -> p.getIdProfil().equals(profilId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Profil non trouvé : " + profilId)))
+            .collect(Collectors.toSet());
+
+        // Vérifier l'héritage des rôles MEDECIN et INFIRMIER
+        boolean hasPersonnelMedical = profilsToAssign.stream()
+            .anyMatch(profil -> profil.getLibelleProfil().equals("PERSONNEL_MEDICAL"));
+        boolean hasMedicalSubRole = profilsToAssign.stream()
+            .anyMatch(profil -> profil.getLibelleProfil().equals("MEDECIN") || profil.getLibelleProfil().equals("INFIRMIER"));
+
+        if (hasMedicalSubRole && !hasPersonnelMedical) {
+            throw new RuntimeException("Les rôles MEDECIN ou INFIRMIER nécessitent le rôle PERSONNEL_MEDICAL.");
+        }
+
+        if (hasPersonnelMedical && !hasMedicalSubRole) {
+            throw new RuntimeException("Le rôle PERSONNEL_MEDICAL nécessite un sous-rôle MEDECIN ou INFIRMIER.");
+        }
+
+        // Vérifier que les rôles INTENDANT et SUPER_ADMIN ne sont pas assignés
+        boolean hasForbiddenRole = profilsToAssign.stream()
+            .anyMatch(profil -> profil.getLibelleProfil().equals("INTENDANT") || profil.getLibelleProfil().equals("SUPER_ADMIN"));
+        if (hasForbiddenRole) {
+            throw new RuntimeException("Les rôles INTENDANT et SUPER_ADMIN ne peuvent pas être assignés via l'habilitation.");
+        }
+
+        user.setProfils(profilsToAssign);
+        userRepository.save(user);
+    }
 //logique de la connexion
  // Authentification
     public String authenticate(Long userId, String password) {
@@ -157,9 +192,71 @@ public class UserService {
         return profilRepository.findAll();
     }
     
-  //Retourne tous les utilisateurs.
+ // Nouvelle méthode pour l'habilitation : exclut INTENDANT, SUPER_ADMIN, MEDECIN et INFIRMIER
+    public List<Profil> getAvailableProfilsForHabilitation() {
+        return profilRepository.findAll().stream()
+            .filter(profil -> !profil.getLibelleProfil().equals("INTENDANT") &&
+                             !profil.getLibelleProfil().equals("SUPER_ADMIN") &&
+                             !profil.getLibelleProfil().equals("MEDECIN") &&
+                             !profil.getLibelleProfil().equals("INFIRMIER"))
+            .collect(Collectors.toList());
+    }
+    
+ /* //Retourne tous les utilisateurs.
     public List<User> findAll() {
         return userRepository.findAll();
+    }*/
+    
+ // Retourne tous les utilisateurs (exclut SUPER_ADMIN et utilisateurs archivés)
+    public List<User> findAll() {
+        return userRepository.findAll().stream()
+            .filter(user -> user.getProfils().stream()
+                .noneMatch(profil -> profil.getLibelleProfil().equals("SUPER_ADMIN")))
+            .filter(user -> user.getArchived() == 0) // Exclure les utilisateurs archivés
+            .collect(Collectors.toList());
+    }
+    
+ // Récupérer les agents avec accès (ayant un mot de passe, exclut SUPER_ADMIN et utilisateurs archivés)
+    public List<User> getAgentsWithAccess() {
+        return userRepository.findAll().stream()
+            .filter(user -> user.getPassword() != null && !user.getPassword().isEmpty())
+            .filter(user -> user.getProfils().stream()
+                .noneMatch(profil -> profil.getLibelleProfil().equals("SUPER_ADMIN")))
+            .filter(user -> user.getArchived() == 0) // Exclure les utilisateurs archivés
+            .collect(Collectors.toList());
+    }
+    
+ // Récupérer les agents sans accès (sans mot de passe, exclut SUPER_ADMIN et utilisateurs archivés)
+    public List<User> getAgentsWithoutAccess() {
+        return userRepository.findAll().stream()
+            .filter(user -> user.getPassword() == null || user.getPassword().isEmpty())
+            .filter(user -> user.getProfils().stream()
+                .noneMatch(profil -> profil.getLibelleProfil().equals("SUPER_ADMIN")))
+            .filter(user -> user.getArchived() == 0) // Exclure les utilisateurs archivés
+            .collect(Collectors.toList());
+    }
+    
+ //  Récupérer les agents archivés (exclut SUPER_ADMIN)
+    public List<User> getArchivedAgents() {
+        return userRepository.findAll().stream()
+            .filter(user -> user.getProfils().stream()
+                .noneMatch(profil -> profil.getLibelleProfil().equals("SUPER_ADMIN")))
+            .filter(user -> user.getArchived() == 1) // Inclure uniquement les utilisateurs archivés
+            .collect(Collectors.toList());
+    }
+    
+ //  Archiver un agent
+    public void archiveAgent(Long userId) {
+        User user = userRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
+        // Vérifier si l'utilisateur est un intendant
+        boolean isIntendant = user.getProfils().stream()
+            .anyMatch(profil -> profil.getLibelleProfil().equals("INTENDANT"));
+        if (isIntendant) {
+            throw new RuntimeException("Les intendants ne peuvent pas être archivés via cette fonctionnalité.");
+        }
+        user.setArchived(1); // Marquer comme archivé
+        userRepository.save(user);
     }
     
     // Générer un userId unique à partir de 1000
@@ -206,19 +303,21 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("Agent non trouvé"));
         userRepository.delete(user);
     }
+    /*
  // Récupérer les agents avec accès (ayant un mot de passe)
     public List<User> getAgentsWithAccess() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getPassword() != null && !user.getPassword().isEmpty())
                 .collect(Collectors.toList());
     }
-
-    // Récupérer les agents sans accès (sans mot de passe)
+*/
+    
+  /*  // Récupérer les agents sans accès (sans mot de passe)
     public List<User> getAgentsWithoutAccess() {
         return userRepository.findAll().stream()
                 .filter(user -> user.getPassword() == null || user.getPassword().isEmpty())
                 .collect(Collectors.toList());
-    }
+    }*/
  // Nouvelle méthode pour sauvegarder un utilisateur
     public void save(User user) {
         userRepository.save(user);

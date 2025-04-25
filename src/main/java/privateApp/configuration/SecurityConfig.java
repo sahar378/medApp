@@ -91,27 +91,38 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/prix/**").hasAuthority("RESPONSABLE_STOCK")
                        // .requestMatchers(HttpMethod.POST, "/api/prix/signaler").hasAuthority("INTENDANT")
                         .requestMatchers(HttpMethod.GET, "/api/prix/produits").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK")
-                     // Medical
+                     // Medical - Fonctionnalités communes (accessibles à PERSONNEL_MEDICAL)
                         .requestMatchers(HttpMethod.GET, "/api/medical/produits").hasAuthority("PERSONNEL_MEDICAL") // Pour faire l'inventaire
                         .requestMatchers(HttpMethod.POST, "/api/medical/inventaire/verifier").hasAuthority("PERSONNEL_MEDICAL") // Vérification par le personnel médical
                         .requestMatchers(HttpMethod.GET, "/api/medical/inventaire/historique").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Historique pour INTENDANT et RESPONSABLE_STOCK
                         .requestMatchers(HttpMethod.GET, "/api/medical/inventaire/{id}").hasAnyAuthority("INTENDANT", "RESPONSABLE_STOCK") // Détails pour INTENDANT et RESPONSABLE_STOCK
-                     // Machines (PERSONNEL_MEDICAL uniquement)
-                        .requestMatchers(HttpMethod.GET, "/api/machines/**").hasAnyAuthority("PERSONNEL_MEDICAL", "INTENDANT")
-                        .requestMatchers(HttpMethod.POST, "/api/machines/**").hasAuthority("PERSONNEL_MEDICAL")
-                        .requestMatchers(HttpMethod.PUT, "/api/machines/**").hasAuthority("PERSONNEL_MEDICAL")
-                        .requestMatchers(HttpMethod.DELETE, "/api/machines/**").hasAuthority("PERSONNEL_MEDICAL")
-
-                        // Techniciens (PERSONNEL_MEDICAL uniquement)
-                        .requestMatchers(HttpMethod.GET, "/api/techniciens/**").hasAnyAuthority("PERSONNEL_MEDICAL", "INTENDANT")
-                        .requestMatchers(HttpMethod.POST, "/api/techniciens/**").hasAuthority("PERSONNEL_MEDICAL")
-                        .requestMatchers(HttpMethod.PUT, "/api/techniciens/**").hasAuthority("PERSONNEL_MEDICAL")
-                        .requestMatchers(HttpMethod.DELETE, "/api/techniciens/**").hasAuthority("PERSONNEL_MEDICAL")
-
-                     // Interventions (PERSONNEL_MEDICAL pour tout sauf GET, INTENDANT pour GET uniquement)
-                        .requestMatchers(HttpMethod.GET, "/api/interventions/**").hasAnyAuthority("PERSONNEL_MEDICAL", "INTENDANT")
-                        .requestMatchers(HttpMethod.POST, "/api/interventions/**").hasAuthority("PERSONNEL_MEDICAL")
-                        .requestMatchers(HttpMethod.PUT, "/api/interventions/**").hasAuthority("PERSONNEL_MEDICAL")
+                        .requestMatchers(HttpMethod.GET, "/api/medical/seances").hasAuthority("PERSONNEL_MEDICAL")//les seances
+                        
+                        
+                        
+                     // Infirmier
+                        //seance
+                        .requestMatchers(HttpMethod.POST, "/api/medical/seances").hasAuthority("PERSONNEL_MEDICAL")
+                        .requestMatchers(HttpMethod.PUT, "/api/medical/seances/**").hasAuthority("PERSONNEL_MEDICAL")
+                        //Machines
+                        .requestMatchers(HttpMethod.GET, "/api/machines/**").hasAnyAuthority("INFIRMIER", "INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/machines/**").hasAuthority("INFIRMIER")
+                        .requestMatchers(HttpMethod.PUT, "/api/machines/**").hasAuthority("INFIRMIER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/machines/**").hasAuthority("INFIRMIER")
+                        //Techniciens
+                        .requestMatchers(HttpMethod.GET, "/api/techniciens/**").hasAnyAuthority("INFIRMIER", "INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/techniciens/**").hasAuthority("INFIRMIER")
+                        .requestMatchers(HttpMethod.PUT, "/api/techniciens/**").hasAuthority("INFIRMIER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/techniciens/**").hasAuthority("INFIRMIER")
+                        //Interventions
+                        .requestMatchers(HttpMethod.GET, "/api/interventions/**").hasAnyAuthority("INFIRMIER", "INTENDANT")
+                        .requestMatchers(HttpMethod.POST, "/api/interventions/**").hasAuthority("INFIRMIER")
+                        .requestMatchers(HttpMethod.PUT, "/api/interventions/**").hasAuthority("INFIRMIER")
+                        // Médecin
+                        .requestMatchers("/api/medical/patients/**").hasAuthority("MEDECIN")
+                        .requestMatchers(HttpMethod.POST, "/api/medical/prescriptions").hasAuthority("MEDECIN")
+                       
+                        
                         
                         //Super Admin
                         .requestMatchers("/api/super-admin/**").hasAuthority("SUPER_ADMIN")

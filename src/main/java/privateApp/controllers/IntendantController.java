@@ -45,8 +45,17 @@ public class IntendantController {
         return ResponseEntity.ok("Rôles assignés avec succès");
     }
 
+   /* @GetMapping("/profils")
+    public ResponseEntity<List<Profil>> getAllProfils() {
+        return ResponseEntity.ok(userService.getAllProfils());
+    }*/
     @GetMapping("/profils")
     public ResponseEntity<List<Profil>> getAllProfils() {
+        return ResponseEntity.ok(userService.getAvailableProfilsForHabilitation());
+    }
+ // Nouvelle méthode pour récupérer tous les profils (y compris MEDECIN et INFIRMIER)
+    @GetMapping("/all-profils")
+    public ResponseEntity<List<Profil>> getAllProfilsIncludingRestricted() {
         return ResponseEntity.ok(userService.getAllProfils());
     }
 }

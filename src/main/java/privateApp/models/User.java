@@ -27,8 +27,11 @@ public class User implements UserDetails {
 
     @Column(name = "statut", nullable = false)
     private boolean statut = true; // Par défaut true pour ne pas affecter les autres utilisateurs
+    @Column(name = "archived", nullable = false)
+    
+    private int archived = 0; // 0 = non archivé, 1 = archivé
 
-    @ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "user_profil",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -59,6 +62,12 @@ public class User implements UserDetails {
     public void removeProfil(Profil profil) { this.profils.remove(profil); }
     public boolean isStatut() { return statut; }
     public void setStatut(boolean statut) { this.statut = statut; }
+    public int getArchived() {
+		return archived;
+	}
+	public void setArchived(int archived) {
+		this.archived = archived;
+	}
 
     // Implémentation de UserDetails
     @Override

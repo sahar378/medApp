@@ -18,7 +18,7 @@ public class InventaireController {
     private InventaireService inventaireService;
 
     @PostMapping("/verifier")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Inventaire> verifierEtCreerInventaire(@RequestBody List<LigneInventaire> lignes) {
         Inventaire inventaire = inventaireService.verifierEtCreerInventaire(lignes);
         return ResponseEntity.ok(inventaire);

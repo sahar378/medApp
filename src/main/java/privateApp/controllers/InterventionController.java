@@ -20,27 +20,27 @@ public class InterventionController {
     private InterventionService interventionService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('PERSONNEL_MEDICAL', 'INTENDANT')")
+    @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
     public ResponseEntity<List<Intervention>> getAllInterventions() {
         return ResponseEntity.ok(interventionService.getAllInterventions());
     }
 
     @GetMapping("/open")
     //@PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
-    @PreAuthorize("hasAnyAuthority('PERSONNEL_MEDICAL', 'INTENDANT')")
+    @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
     public ResponseEntity<List<Intervention>> getOpenInterventions() {
         return ResponseEntity.ok(interventionService.getOpenInterventions());
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Intervention> createIntervention(@RequestBody Intervention intervention) {
       Intervention createdIntervention = interventionService.createIntervention(intervention);
       return ResponseEntity.ok(createdIntervention);
     }
 
     @PutMapping("/{id}/close")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Intervention> closeIntervention(
             @PathVariable Long id,
             @RequestParam String reparation,
@@ -49,7 +49,7 @@ public class InterventionController {
         return ResponseEntity.ok(interventionService.closeIntervention(id, reparation, dateReparation, lieuReparation));
     }
     @PutMapping("/{id}/archive")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> archiveIntervention(@PathVariable Long id) {
       interventionService.archiveIntervention(id);
       return ResponseEntity.ok().build();

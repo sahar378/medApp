@@ -18,13 +18,13 @@ public class MachineController {
     private MachineService machineService;
 
     @GetMapping
-    @PreAuthorize("hasAnyAuthority('PERSONNEL_MEDICAL', 'INTENDANT')")
+    @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
     public ResponseEntity<List<Machine>> getAllMachines() {
         return ResponseEntity.ok(machineService.getAllMachines());
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Machine> addMachine(@RequestBody Machine machine) {
         return ResponseEntity.ok(machineService.addMachine(machine));
     }
@@ -45,33 +45,33 @@ public class MachineController {
     }
 */
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> deleteMachine(@PathVariable Long id) {
         Machine machine = machineService.getMachineById(id);
         machineService.deleteMachine(id);
         return ResponseEntity.noContent().build();
     }
     @PutMapping("/{id}/archive")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> archiveMachine(@PathVariable Long id) {
       machineService.archiveMachine(id);
       return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('PERSONNEL_MEDICAL', 'INTENDANT')")
+    @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
     public ResponseEntity<Machine> getMachineById(@PathVariable Long id) {
       Machine machine = machineService.getMachineById(id);
       return ResponseEntity.ok(machine);
     }
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> updateMachine(@PathVariable Long id, @RequestBody Machine machine) {
       machineService.updateMachine(id, machine);
       return ResponseEntity.ok().build();
     }
     @GetMapping("/non-archived")
-    @PreAuthorize("hasAnyAuthority('INTENDANT', 'PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'INFIRMIER')")
     public ResponseEntity<List<Machine>> getNonArchivedMachines() {
       List<Machine> machines = machineService.getNonArchivedMachines();
       return ResponseEntity.ok(machines);

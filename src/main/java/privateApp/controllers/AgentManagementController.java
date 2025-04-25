@@ -56,6 +56,13 @@ public class AgentManagementController {
         );
         return ResponseEntity.ok("Agent mis à jour avec succès");
     }
+    
+ // Archiver un agent
+    @PostMapping("/archive/{userId}")
+    public ResponseEntity<String> archiveAgent(@PathVariable Long userId) {
+        userService.archiveAgent(userId);
+        return ResponseEntity.ok("Agent archivé avec succès");
+    }
 
     // Supprimer un agent
     @DeleteMapping("/delete/{userId}")
@@ -64,33 +71,32 @@ public class AgentManagementController {
         return ResponseEntity.ok("Agent supprimé avec succès");
     }
 
- // Liste de tous les agents (excluant l’intendant connecté)
+ // Liste de tous les agents 
     @GetMapping("/all")
     public ResponseEntity<List<User>> getAllAgents(Authentication authentication) {
-        String currentUserId = authentication.getName(); // userId de l’intendant connecté (String)
-        List<User> agents = userService.findAll().stream()
-            .filter(user -> !user.getUserId().toString().equals(currentUserId)) // Exclure l’intendant
-            .collect(Collectors.toList());
+        List<User> agents = userService.findAll();
         return ResponseEntity.ok(agents);
     }
-
-    // Liste des agents avec accès (excluant l’intendant connecté)
+    
+ // Liste des agents avec accès (plus d'exclusion de l’intendant connecté)
     @GetMapping("/with-access")
-    public ResponseEntity<List<User>> getAgentsWithAccess(Authentication authentication) {
-        String currentUserId = authentication.getName(); // userId de l’intendant connecté (String)
-        List<User> agents = userService.getAgentsWithAccess().stream()
-            .filter(user -> !user.getUserId().toString().equals(currentUserId)) // Exclure l’intendant
-            .collect(Collectors.toList());
+    public ResponseEntity<List<User>> getAgentsWithAccess() {
+        List<User> agents = userService.getAgentsWithAccess();
         return ResponseEntity.ok(agents);
     }
 
-    // Liste des agents sans accès (excluant l’intendant connecté)
+ // Liste des agents sans accès 
     @GetMapping("/without-access")
-    public ResponseEntity<List<User>> getAgentsWithoutAccess(Authentication authentication) {
-        String currentUserId = authentication.getName(); // userId de l’intendant connecté (String)
-        List<User> agents = userService.getAgentsWithoutAccess().stream()
-            .filter(user -> !user.getUserId().toString().equals(currentUserId)) // Exclure l’intendant
-            .collect(Collectors.toList());
+    public ResponseEntity<List<User>> getAgentsWithoutAccess() {
+        List<User> agents = userService.getAgentsWithoutAccess();
+        return ResponseEntity.ok(agents);
+    }
+
+    
+ // Nouvelle méthode : Liste des agents archivés
+    @GetMapping("/archived")
+    public ResponseEntity<List<User>> getArchivedAgents() {
+        List<User> agents = userService.getArchivedAgents();
         return ResponseEntity.ok(agents);
     }
 }

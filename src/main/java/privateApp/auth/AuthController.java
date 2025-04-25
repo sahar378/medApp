@@ -1,5 +1,6 @@
 package privateApp.auth;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,7 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder; // Injection de PasswordEncoder
 //Vérifie les identifiants. Si le mot de passe est expiré, demande un changement ; sinon, redirige vers l’URL du profil.
-    @PostMapping("/login")
+  /*  @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
             String token = userService.authenticate(request.getUserId(), request.getPassword());
@@ -41,6 +42,32 @@ public class AuthController {
             response.put("urls", user.getProfils().stream()
                 .map(Profil::getUrl)
                 .collect(Collectors.toList()));
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body("Identifiants incorrects");
+        }
+    }*/
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        try {
+            String token = userService.authenticate(request.getUserId(), request.getPassword());
+            User user = userService.findUserById(request.getUserId());
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("message", user.isPasswordExpired() 
+                ? "Mot de passe expiré, veuillez le changer." 
+                : "Connexion réussie");
+
+            // Créer une liste de profils avec rôle, URL et descriptif
+            List<Map<String, String>> profiles = user.getProfils().stream().map(profil -> {
+                Map<String, String> profileData = new HashMap<>();
+                profileData.put("role", profil.getLibelleProfil());
+                profileData.put("url", profil.getUrl());
+                profileData.put("descriptif", profil.getDescriptifAffiche());
+                return profileData;
+            }).collect(Collectors.toList());
+
+            response.put("profiles", profiles);
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body("Identifiants incorrects");
