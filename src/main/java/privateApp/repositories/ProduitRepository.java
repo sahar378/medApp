@@ -15,4 +15,7 @@ public interface ProduitRepository extends JpaRepository<Produit, Long> {
 	// Nouvelles méthodes pour filtrer par archive et catégorie
     List<Produit> findByArchiveFalseAndCategorieIdCategorie(Long idCategorie);
     List<Produit> findByArchiveTrueAndCategorieIdCategorie(Long idCategorie);
+    Optional<Produit> findByNom(String nom); // Recherche par nom
+    List<Produit> findByStandardTrue();
+    Optional<Produit> findByNomIgnoreCaseAndArchiveFalse(String nom);
 	}

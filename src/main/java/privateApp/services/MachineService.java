@@ -19,34 +19,67 @@ public class MachineService {
     @Autowired
     private InterventionRepository interventionRepository;
 
+    /**
+     * Récupère toutes les machines.
+     * @return Liste des machines.
+     */
     public List<Machine> getAllMachines() {
         return machineRepository.findAll();
     }
 
+    /**
+     * Récupère une machine par son ID.
+     * @param id L'ID de la machine.
+     * @return La machine correspondante.
+     */
     public Machine getMachineById(Long id) {
         return machineRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Machine non trouvée"));
     }
 
+    /**
+     * Récupère les machines par disponibilité.
+     * @param disponibilite Statut (0 = disponible, 1 = en intervention, 2 = réformé).
+     * @return Liste des machines correspondantes.
+     */
     public List<Machine> getMachinesByDisponibilite(int disponibilite) {
+        if (disponibilite < 0 || disponibilite > 2) {
+            throw new IllegalArgumentException("Statut de disponibilité invalide");
+        }
         return machineRepository.findByDisponibilite(disponibilite);
     }
-
+    
+    /**
+     * Ajoute une nouvelle machine.
+     * @param machine Les données de la machine.
+     * @return La machine ajoutée.
+     */
     @Transactional
     public Machine addMachine(Machine machine) {
+        if (machine.getDisponibilite() < 0 || machine.getDisponibilite() > 2) {
+            throw new IllegalArgumentException("Statut de disponibilité invalide");
+        }
         return machineRepository.save(machine);
     }
 
+    /**
+     * Met à jour la disponibilité d'une machine.
+     * - Crée une intervention si disponibilite = 1 (en intervention).
+     * @param idMachine L'ID de la machine.
+     * @param disponibilite Nouveau statut (0 = disponible, 1 = en intervention, 2 = réformé).
+     * @return La machine mise à jour.
+     */
     @Transactional
     public Machine updateDisponibilite(Long idMachine, int disponibilite) {
+        if (disponibilite < 0 || disponibilite > 2) {
+            throw new IllegalArgumentException("Statut de disponibilité invalide");
+        }
         Machine machine = getMachineById(idMachine);
         machine.setDisponibilite(disponibilite);
 
         if (disponibilite == 1) { // Si en intervention
-            // Créer une intervention automatiquement (technicien par défaut ou à assigner)
             Intervention intervention = new Intervention();
             intervention.setMachine(machine);
-            // Pour cet exemple, on suppose un technicien par défaut (à ajuster selon ton besoin)
             intervention.setNature(1); // Réparation par défaut
             intervention.setDatePanne(new java.util.Date()); // Date actuelle
             interventionRepository.save(intervention);
@@ -54,39 +87,63 @@ public class MachineService {
 
         return machineRepository.save(machine);
     }
-	 // Ajouter cette méthode
-	 @Transactional
-	 public void deleteMachine(Long id) {
-	     Machine machine = getMachineById(id);
-	     machineRepository.delete(machine);
- }
-	 //archivage
-	 @Transactional
-	    public void archiveMachine(Long id) {
-	        Machine machine = machineRepository.findById(id)
-	                .orElseThrow(() -> new RuntimeException("Machine non trouvée"));
-	        machine.setArchived(true);
-	        machine.setDisponibilite(2); // Réformé lorsqu'archivé
-	        machineRepository.save(machine);
-	    }
-	 @Transactional
-	 public void updateMachine(Long id, Machine updatedMachine) {
-	   Machine machine = getMachineById(id);
-	   machine.setDateMiseEnService(updatedMachine.getDateMiseEnService());
-	   machine.setDisponibilite(updatedMachine.getDisponibilite());
-	   machine.setType(updatedMachine.getType());
-	   machine.setConstructeur(updatedMachine.getConstructeur());
-	   machine.setFournisseur(updatedMachine.getFournisseur());
-	   machine.setCaracteristique(updatedMachine.getCaracteristique());
-	   machine.setVoltage(updatedMachine.getVoltage());
-	   machineRepository.save(machine);
-	 }
-	// privateApp.services/MachineService.java
-	 public List<Machine> getNonArchivedMachines() {
-	   return machineRepository.findByArchivedFalse();
-	 }
+    
+    /**
+     * Supprime une machine.
+     * @param id L'ID de la machine.
+     */
+    @Transactional
+    public void deleteMachine(Long id) {
+        Machine machine = getMachineById(id);
+        machineRepository.delete(machine);
+    }
 
-	 public List<Machine> getArchivedMachines() {
-	   return machineRepository.findByArchivedTrue();
-	 }
+    /**
+     * Archive une machine et marque comme réformée (disponibilite = 2).
+     * @param id L'ID de la machine.
+     */
+    @Transactional
+    public void archiveMachine(Long id) {
+        Machine machine = getMachineById(id);
+        machine.setArchived(true);
+        machine.setDisponibilite(2); // Réformé lorsqu'archivé
+        machineRepository.save(machine);
+    }
+    
+    /**
+     * Met à jour les informations d'une machine.
+     * @param id L'ID de la machine.
+     * @param updatedMachine Les nouvelles données.
+     */
+    @Transactional
+    public void updateMachine(Long id, Machine updatedMachine) {
+        Machine machine = getMachineById(id);
+        if (updatedMachine.getDisponibilite() < 0 || updatedMachine.getDisponibilite() > 2) {
+            throw new IllegalArgumentException("Statut de disponibilité invalide");
+        }
+        machine.setDateMiseEnService(updatedMachine.getDateMiseEnService());
+        machine.setDisponibilite(updatedMachine.getDisponibilite());
+        machine.setType(updatedMachine.getType());
+        machine.setConstructeur(updatedMachine.getConstructeur());
+        machine.setFournisseur(updatedMachine.getFournisseur());
+        machine.setCaracteristique(updatedMachine.getCaracteristique());
+        machine.setVoltage(updatedMachine.getVoltage());
+        machineRepository.save(machine);
+    }
+    
+    /**
+     * Récupère les machines non archivées.
+     * @return Liste des machines non archivées.
+     */
+    public List<Machine> getNonArchivedMachines() {
+        return machineRepository.findByArchivedFalse();
+    }
+
+    /**
+     * Récupère les machines archivées.
+     * @return Liste des machines archivées.
+     */
+    public List<Machine> getArchivedMachines() {
+        return machineRepository.findByArchivedTrue();
+    }
 }

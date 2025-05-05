@@ -40,7 +40,7 @@ public class StockController {
 
     // Endpoint pour mettre à jour un produit existant
     @PutMapping("/produit/{produitId}")
-    @PreAuthorize("hasAuthority('RESPONSABLE_STOCK')")
+    @PreAuthorize("hasAuthority('RESPONSABLE_STOCK','PERSONNEL_MEDICAL')")
     public ResponseEntity<Produit> updateProduit(@PathVariable Long produitId, @RequestBody Produit produit) {
         produit.setIdProduit(produitId); // Assure que l’ID correspond
         return ResponseEntity.ok(stockService.updateProduit(produit));
@@ -73,7 +73,7 @@ public class StockController {
     }
 
     @GetMapping("/produits/active/materiels")
-    @PreAuthorize("hasAuthority('INTENDANT')")
+    @PreAuthorize("hasAuthority('INTENDANT','PERSONNEL_MEDICAL')")
     public ResponseEntity<List<Produit>> getActiveMateriels() {
         return ResponseEntity.ok(stockService.getActiveMateriels());
     }
@@ -116,7 +116,25 @@ public class StockController {
         stockService.definirSeuilsCategorie(idCategorie, nombreMalades);
         return ResponseEntity.ok("Seuils mis à jour avec succès");
     }
+    
+    
+    
+    @PostMapping("/seuil/automatique")
+    @PreAuthorize("hasAuthority('RESPONSABLE_STOCK')")
+    public ResponseEntity<String> definirSeuilAlerteAutomatique(@RequestParam Long produitId) {
+        stockService.definirSeuilAlerteAutomatique(produitId);
+        return ResponseEntity.ok("Seuil alerte mis à jour automatiquement avec succès");
+    }
 
+    @PostMapping("/seuils/categorie/automatique")
+    @PreAuthorize("hasAuthority('RESPONSABLE_STOCK')")
+    public ResponseEntity<String> definirSeuilsCategorieAutomatique(@RequestParam int idCategorie) {
+        stockService.definirSeuilsCategorieAutomatique(idCategorie);
+        return ResponseEntity.ok("Seuils mis à jour automatiquement avec succès");
+    }
+
+    
+    
     @GetMapping("/alertes")
     @PreAuthorize("hasAnyAuthority('INTENDANT', 'RESPONSABLE_STOCK')")
     public ResponseEntity<List<ProduitAlerteDTO>> verifierAlertes() {

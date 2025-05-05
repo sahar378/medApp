@@ -9,6 +9,7 @@ import privateApp.services.JwtService;
 import privateApp.services.UserDetailsServiceImpl;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -17,6 +18,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -45,12 +48,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // Vérification si le token existe et n’est pas déjà invalidé
         if (tokenEntityOptional.isEmpty() || tokenEntityOptional.get().isLoggedOut()) {
-        	System.out.println("Token not found in database: " + token);
+            System.out.println("Token not found in database: " + token);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token invalid or not found");
             return;
         }
-//gèrer  les tokens expirés en les invalidant dans la base : setLoggedOut(true)
+
         // Récupération de l’entité token
         var tokenEntity = tokenEntityOptional.get();
 
@@ -70,9 +73,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String userId = jwtService.extractUserId(token);
             if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(userId);
+                // Extract authorities from token
+                List<String> authorities = jwtService.extractAuthorities(token);
+                List<SimpleGrantedAuthority> grantedAuthorities = authorities.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
                 if (jwtService.isValid(token, userDetails)) {
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
+                            userDetails, null, grantedAuthorities);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
@@ -87,10 +96,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token expired");
         } catch (Exception e) {
-        	System.out.println("Erreur de validation du token: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            System.out.println("Erreur de validation du token: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             // Autres erreurs (par exemple, token mal formé)
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Invalid token");
         }
-       }
+    }
 }

@@ -33,6 +33,8 @@ public class Produit {
     @Column(name = "archive", nullable = false) // Nouveau champ
     private boolean archive = false; // Par défaut, pas archivé
     
+    private boolean standard; // Indique si le produit est standard
+    
     @ManyToMany(mappedBy = "produits")
     @JsonIgnore
     private List<Fournisseur> fournisseurs;
@@ -65,4 +67,6 @@ public class Produit {
     public void setCategorie(Categorie categorie) { this.categorie = categorie; }
     public boolean isArchive() { return archive; }
     public void setArchive(boolean archive) { this.archive = archive; }
+    public boolean isStandard() { return standard; }
+    public void setStandard(boolean standard) { this.standard = standard; }
 }

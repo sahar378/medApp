@@ -9,8 +9,11 @@ public class Token {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    
+    
+    @Column(length = 512) // Augmentez à 512 ou plus
     private String token;
+    
     private boolean loggedOut;
     @Temporal(TemporalType.TIMESTAMP)
     private Date logoutTimestamp;

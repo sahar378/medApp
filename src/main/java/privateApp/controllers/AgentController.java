@@ -1,5 +1,7 @@
 package privateApp.controllers;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -7,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import privateApp.dtos.UpdateProfileRequest;
 import privateApp.models.User;
+import privateApp.repositories.UserRepository;
 import privateApp.services.UserService;
 
 @RestController
@@ -16,6 +19,9 @@ public class AgentController {
 
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     // Récupérer les informations du profil
     @GetMapping("/profile")
@@ -43,5 +49,12 @@ public class AgentController {
             request.getNumeroTelephone()
         );
         return ResponseEntity.ok("Profil mis à jour avec succès");
+    }
+    // Récupérer le personnel médical
+    @GetMapping("/medical-personnel")
+    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    public ResponseEntity<List<User>> getMedicalPersonnel() {
+        List<User> medicalPersonnel = userRepository.findNonArchivedByProfil("PERSONNEL_MEDICAL");
+        return ResponseEntity.ok(medicalPersonnel);
     }
 }

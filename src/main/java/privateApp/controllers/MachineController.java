@@ -1,4 +1,3 @@
-// privateApp.controllers/MachineController.java
 package privateApp.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -6,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import privateApp.models.Machine;
+import privateApp.repositories.MachineRepository;
 import privateApp.services.MachineService;
 
 import java.util.List;
@@ -16,6 +16,9 @@ public class MachineController {
 
     @Autowired
     private MachineService machineService;
+    
+    @Autowired
+    private MachineRepository machineRepository;
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
@@ -30,57 +33,57 @@ public class MachineController {
     }
 
     @PutMapping("/{id}/disponibilite")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Machine> updateDisponibilite(@PathVariable Long id, @RequestParam int disponibilite) {
         return ResponseEntity.ok(machineService.updateDisponibilite(id, disponibilite));
     }
 
-    /*@PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
-    public ResponseEntity<Machine> updateMachine(@PathVariable Long id, @RequestBody Machine machine) {
-        Machine existingMachine = machineService.getMachineById(id);
-        existingMachine.setDateMiseEnService(machine.getDateMiseEnService());
-        existingMachine.setDisponibilite(machine.getDisponibilite());
-        return ResponseEntity.ok(machineService.addMachine(existingMachine));
-    }
-*/
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> deleteMachine(@PathVariable Long id) {
-        Machine machine = machineService.getMachineById(id);
         machineService.deleteMachine(id);
         return ResponseEntity.noContent().build();
     }
+
     @PutMapping("/{id}/archive")
     @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> archiveMachine(@PathVariable Long id) {
-      machineService.archiveMachine(id);
-      return ResponseEntity.ok().build();
+        machineService.archiveMachine(id);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('INFIRMIER', 'INTENDANT')")
     public ResponseEntity<Machine> getMachineById(@PathVariable Long id) {
-      Machine machine = machineService.getMachineById(id);
-      return ResponseEntity.ok(machine);
+        Machine machine = machineService.getMachineById(id);
+        return ResponseEntity.ok(machine);
     }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('INFIRMIER')")
     public ResponseEntity<Void> updateMachine(@PathVariable Long id, @RequestBody Machine machine) {
-      machineService.updateMachine(id, machine);
-      return ResponseEntity.ok().build();
+        machineService.updateMachine(id, machine);
+        return ResponseEntity.ok().build();
     }
+
     @GetMapping("/non-archived")
     @PreAuthorize("hasAnyAuthority('INTENDANT', 'INFIRMIER')")
     public ResponseEntity<List<Machine>> getNonArchivedMachines() {
-      List<Machine> machines = machineService.getNonArchivedMachines();
-      return ResponseEntity.ok(machines);
+        List<Machine> machines = machineService.getNonArchivedMachines();
+        return ResponseEntity.ok(machines);
     }
 
     @GetMapping("/archived")
     @PreAuthorize("hasAuthority('INTENDANT')")
     public ResponseEntity<List<Machine>> getArchivedMachines() {
-      List<Machine> machines = machineService.getArchivedMachines();
-      return ResponseEntity.ok(machines);
+        List<Machine> machines = machineService.getArchivedMachines();
+        return ResponseEntity.ok(machines);
+    }
+    
+    @GetMapping("/disponibles")
+    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    public ResponseEntity<List<Machine>> getAvailableMachines() {
+        List<Machine> machines = machineRepository.findByDisponibiliteAndArchivedFalse(0);
+        return ResponseEntity.ok(machines);
     }
 }
