@@ -20,7 +20,7 @@ public class Prix {
     private int statut; // 0 = ancien, 1 = actif
 
     @Column(name = "taux_tva", nullable = true)
-    private Double tauxTva = 0.0; // Double (objet) au lieu de double (primitif) pour permettre null, 0 par défaut
+    private double tauxTva = 0.0; // Double (objet) au lieu de double (primitif) pour permettre null, 0 par défaut
     
     @ManyToOne
     @JoinColumn(name = "id_produit", nullable = false)

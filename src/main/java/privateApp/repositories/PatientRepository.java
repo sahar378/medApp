@@ -30,7 +30,7 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     List<Patient> findByActifTrueAndArchiveFalse();
     // Liste des patients non actifs et non archivés
     List<Patient> findByActifFalseAndArchiveFalse();
-    
+        
     @Query("SELECT p.produitsStandards FROM Patient p WHERE p.idPatient = :idPatient")
     List<Produit> findProduitsStandardsByPatientId(@Param("idPatient") Long idPatient);
 }

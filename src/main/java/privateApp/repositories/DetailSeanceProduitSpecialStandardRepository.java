@@ -1,22 +1,24 @@
 package privateApp.repositories;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-
+import org.springframework.stereotype.Repository;
 import privateApp.models.DetailSeanceProduitSpecialStandard;
 
-/**
- * Repository pour gérer les opérations sur l'entité DetailSeanceProduitSpecialStandard.
- */
+import java.util.List;
+
+@Repository
 public interface DetailSeanceProduitSpecialStandardRepository extends JpaRepository<DetailSeanceProduitSpecialStandard, Long> {
-	/**
-     * Trouve les produits associés à une séance.
-     * @param seanceId L'ID de la séance.
-     * @return Liste des détails des produits.
-     */
     List<DetailSeanceProduitSpecialStandard> findBySeanceIdSeance(Long seanceId);
-    @Query("SELECT d FROM DetailSeanceProduitSpecialStandard d JOIN FETCH d.seance s JOIN FETCH s.patient p")
+
+    @Query("SELECT d FROM DetailSeanceProduitSpecialStandard d JOIN FETCH d.seance s JOIN FETCH s.patient WHERE d.seance.idSeance = :seanceId")
+    List<DetailSeanceProduitSpecialStandard> findBySeanceIdSeanceWithPatient(Long seanceId);
+
+    @Query("SELECT d FROM DetailSeanceProduitSpecialStandard d JOIN FETCH d.seance s JOIN FETCH s.patient")
     List<DetailSeanceProduitSpecialStandard> findAllWithSeanceAndPatient();
+
+    @Modifying
+    @Query("DELETE FROM DetailSeanceProduitSpecialStandard d WHERE d.seance.idSeance = :seanceId AND d.standard = false")
+    void deleteBySeanceIdSeanceAndStandardFalse(Long seanceId);
 }

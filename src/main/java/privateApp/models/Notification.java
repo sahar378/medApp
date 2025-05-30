@@ -17,6 +17,8 @@ public class Notification {
 
     @Column(nullable = false)
     private Date dateCreation;
+    
+    
 
     @ManyToOne
     @JoinColumn(name = "emetteur_id", nullable = false)

@@ -99,4 +99,11 @@ public class AgentManagementController {
         List<User> agents = userService.getArchivedAgents();
         return ResponseEntity.ok(agents);
     }
+    
+ // Rechercher des agents par matricule
+    @GetMapping("/search")
+    public ResponseEntity<List<User>> searchAgentsByMatricule(@RequestParam String matricule) {
+        List<User> agents = userService.searchAgentsByMatricule(matricule);
+        return ResponseEntity.ok(agents);
+    }
 }

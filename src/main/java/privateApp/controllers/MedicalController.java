@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Contrôleur REST pour gérer les séances, mesures et produits utilisés.
@@ -101,6 +102,26 @@ public class MedicalController {
     }
 
     /**
+     * Met à jour les produits utilisés dans une séance.
+     * @param seanceId L'ID de la séance.
+     * @param requestBody Corps de la requête contenant les différents types de produits.
+     * @return Liste des détails mis à jour.
+     */
+    @PutMapping("/seances/{seanceId}/produits")
+    @PreAuthorize("hasAuthority('INTENDANT')")
+    public ResponseEntity<List<DetailSeanceProduitSpecialStandard>> updateProduitNonStandard(
+            @PathVariable Long seanceId,
+            @RequestBody Map<String, Map<String, String>> requestBody) {
+        Map<String, String> produitsNonStandards = requestBody.getOrDefault("produitsNonStandards", new java.util.HashMap<>());
+        Map<String, String> produitsSansStock = requestBody.getOrDefault("produitsSansStock", new java.util.HashMap<>());
+        Map<String, String> produitsHorsStock = requestBody.getOrDefault("produitsHorsStock", new java.util.HashMap<>());
+        Map<String, String> produitsSpeciaux = requestBody.getOrDefault("produitsSpeciaux", new java.util.HashMap<>());
+        
+        return ResponseEntity.ok(seanceService.updateProduitNonStandard(
+                seanceId, produitsNonStandards, produitsSansStock, produitsHorsStock, produitsSpeciaux));
+    }
+
+    /**
      * Ajoute une mesure à une séance.
      * @param seanceId L'ID de la séance.
      * @param mesure Les données de la mesure.
@@ -114,7 +135,6 @@ public class MedicalController {
         Seance seance = seanceRepository.findById(seanceId)
                 .orElseThrow(() -> new RuntimeException("Séance non trouvée"));
         mesure.setSeance(seance);
-        // Ne pas écraser l'heure fournie par le frontend
         if (mesure.getHeure() == null) {
             logger.warn("Heure non fournie, utilisation de l'heure actuelle");
             mesure.setHeure(LocalDateTime.now());
@@ -166,7 +186,6 @@ public class MedicalController {
         Seance existingSeance = seanceRepository.findById(seanceId)
                 .orElseThrow(() -> new RuntimeException("Séance non trouvée"));
 
-        // Mettre à jour les champs
         existingSeance.setPatient(seanceData.getPatient());
         existingSeance.setMachine(seanceData.getMachine());
         existingSeance.setInfirmier(seanceData.getInfirmier());
@@ -191,7 +210,6 @@ public class MedicalController {
         existingSeance.setTemperatureFin(seanceData.getTemperatureFin());
         existingSeance.setTraitement(seanceData.getTraitement());
 
-        // Recalculer dureeSeance et pertePoids
         if (existingSeance.getDebutDialyse() != null && existingSeance.getFinDialyse() != null) {
             existingSeance.setDureeSeance((int) Duration.between(existingSeance.getDebutDialyse(), existingSeance.getFinDialyse()).toMinutes());
         }
@@ -236,7 +254,6 @@ public class MedicalController {
         return ResponseEntity.ok(seanceService.getSeancesByDate(date));
     }
     
-    //fetch all DetailSeanceProduitSpecialStandard records with session and patient details.
     @GetMapping("/produits-usage")
     @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
     public ResponseEntity<List<DetailSeanceProduitSpecialStandard>> getAllProduitsUsage() {
@@ -282,5 +299,36 @@ public class MedicalController {
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
         return seanceService.getSeancesByDateRange(patientId, startDateTime, endDateTime);
     }
-
+    
+    @PutMapping("/seances/mesures/{mesureId}")
+    @PreAuthorize("hasAuthority('PERSONNEL_MEDICAL')")
+    @Transactional
+    public ResponseEntity<DetailMesure> updateMesure(@PathVariable Long mesureId, @RequestBody DetailMesure mesureData) {
+        logger.info("Mise à jour de la mesure ID: {}", mesureId);
+        DetailMesure existingMesure = detailMesureRepository.findById(mesureId)
+                .orElseThrow(() -> new RuntimeException("Mesure non trouvée"));
+        existingMesure.setHeure(mesureData.getHeure());
+        existingMesure.setTa(mesureData.getTa());
+        existingMesure.setPouls(mesureData.getPouls());
+        existingMesure.setDebitMlMn(mesureData.getDebitMlMn());
+        existingMesure.setHep(mesureData.getHep());
+        existingMesure.setPv(mesureData.getPv());
+        existingMesure.setPtm(mesureData.getPtm());
+        existingMesure.setConduc(mesureData.getConduc());
+        existingMesure.setUfMlH(mesureData.getUfMlH());
+        existingMesure.setUfTotalAffiche(mesureData.getUfTotalAffiche());
+        existingMesure.setObservation(mesureData.getObservation());
+        DetailMesure updatedMesure = detailMesureRepository.save(existingMesure);
+        logger.info("Mesure mise à jour avec succès: {}", updatedMesure);
+        return ResponseEntity.ok(updatedMesure);
+    }
+    @GetMapping("/produitsStandards")
+    @PreAuthorize("hasAnyAuthority('PERSONNEL_MEDICAL', 'RESPONSABLE_STOCK')")
+    public ResponseEntity<List<Produit>> getProduitByNom(@RequestParam(required = false) String nom) {
+        if (nom != null && !nom.isEmpty()) {
+        	Optional<Produit> produitOptional = stockService.getProduitByNom(nom);
+        	return ResponseEntity.ok(produitOptional.map(List::of).orElse(List.of()));
+        }
+        return ResponseEntity.ok(stockService.getProduitsForInventaire());
+    }
 }

@@ -254,4 +254,8 @@ public class PatientService {
         logger.info("Récupération des patients non actifs et non archivés");
         return patientRepository.findByActifFalseAndArchiveFalse();
     }
+    
+    public List<Patient> getNonArchivedPatients() {
+        return patientRepository.findByArchiveFalse();
+    }
 }

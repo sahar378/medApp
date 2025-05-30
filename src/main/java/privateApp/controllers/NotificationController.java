@@ -2,6 +2,7 @@
 package privateApp.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,6 +12,9 @@ import privateApp.models.User;
 import privateApp.repositories.NotificationRepository;
 import privateApp.dtos.NotificationDTO;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -29,9 +33,22 @@ public class NotificationController {
         return ResponseEntity.ok("Notification envoyée avec succès.");
     }
 
+ // NotificationController.java (modifié)
     @GetMapping
-    @PreAuthorize("hasAuthority('RESPONSABLE_STOCK')")
-    public ResponseEntity<List<Notification>> getNotifications() {
-        return ResponseEntity.ok(notificationRepository.findAll()); // Toutes les notifications sont accessibles
+    @PreAuthorize("hasAnyAuthority('RESPONSABLE_STOCK','INTENDANT')")
+    public ResponseEntity<List<Notification>> getNotifications(
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        
+        if (date != null) {
+            // Conversion en plage de dates pour la journée entière
+            ZoneId zone = ZoneId.systemDefault();
+            Date startDate = Date.from(date.atStartOfDay(zone).toInstant());
+            Date endDate = Date.from(date.plusDays(1).atStartOfDay(zone).toInstant());
+            
+            return ResponseEntity.ok(
+                notificationRepository.findByDateCreationBetweenOrderByDateCreationDesc(startDate, endDate)
+            );
+        }
+        return ResponseEntity.ok(notificationRepository.findAllByOrderByDateCreationDesc());
     }
 }

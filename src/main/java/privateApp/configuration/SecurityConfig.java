@@ -128,10 +128,14 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/medical/patients/search/actifs").hasAnyAuthority("PERSONNEL_MEDICAL", "MEDECIN","INTENDANT")
                         .requestMatchers(HttpMethod.GET, "/api/medical/patients/inactifs-non-archives").hasAnyAuthority("PERSONNEL_MEDICAL", "MEDECIN" ,"INTENDANT" )
                         .requestMatchers(HttpMethod.GET, "/api/medical/patients/search/inactifs-non-archives").hasAnyAuthority("PERSONNEL_MEDICAL", "MEDECIN" ,"INTENDANT" )
-                        .requestMatchers(HttpMethod.GET, "/api/medical/patients").hasAnyAuthority("MEDECIN","INTENDANT")
+                        .requestMatchers(HttpMethod.GET, "/api/medical/patients/non-archived").hasAnyAuthority("PERSONNEL_MEDICAL", "MEDECIN" ,"INTENDANT" )
+
+                        .requestMatchers(HttpMethod.GET, "/api/medical/patients").hasAnyAuthority("MEDECIN","INTENDANT","PERSONNEL_MEDICAL")
                         .requestMatchers(HttpMethod.GET, "/api/medical/patients/archived").hasAnyAuthority("MEDECIN", "INTENDANT")
 
-                        .requestMatchers(HttpMethod.GET, "/api/medical/patients/{id}").hasAuthority("MEDECIN")
+                        //.requestMatchers(HttpMethod.GET, "/api/medical/patients/{id}").hasAuthority("MEDECIN")
+                     // Dans SecurityConfig.java
+                        .requestMatchers(HttpMethod.GET, "/api/medical/patients/{id}").hasAnyAuthority("MEDECIN", "PERSONNEL_MEDICAL")
                         .requestMatchers(HttpMethod.POST, "/api/medical/patients").hasAuthority("MEDECIN")
                         .requestMatchers(HttpMethod.PUT, "/api/medical/patients/{id}").hasAuthority("MEDECIN")
                         .requestMatchers(HttpMethod.PUT, "/api/medical/patients/{id}/toggle-actif").hasAuthority("MEDECIN")
@@ -145,12 +149,13 @@ public class SecurityConfig {
                      // Medical - Produits Standards
                         .requestMatchers(HttpMethod.GET, "/api/medical/patients/{patientId}/produits-standards").hasAnyAuthority("PERSONNEL_MEDICAL", "MEDECIN", "RESPONSABLE_STOCK","INTENDANT")
                         // Medical - Dialysis History
-                        .requestMatchers(HttpMethod.GET, "/api/medical/patients/{patientId}/dialysis-history").hasAnyAuthority("MEDECIN", "INTENDANT") // Updated
+                        .requestMatchers(HttpMethod.GET, "/api/medical/patients/{patientId}/dialysis-history").hasAnyAuthority("MEDECIN", "INTENDANT" , "PERSONNEL_MEDICAL") // Updated
                         // Medical - Seances et Mesures
                         .requestMatchers(HttpMethod.GET, "/api/medical/seances").hasAnyAuthority("PERSONNEL_MEDICAL", "INTENDANT")
                         .requestMatchers(HttpMethod.POST, "/api/medical/seances").hasAuthority("PERSONNEL_MEDICAL")
                         
                         .requestMatchers(HttpMethod.GET, "/api/medical/seances/{seanceId}/produits").hasAnyAuthority("PERSONNEL_MEDICAL", "RESPONSABLE_STOCK","INTENDANT")
+                        .requestMatchers(HttpMethod.PUT, "/api/medical/seances/{seanceId}/produits").hasAuthority("INTENDANT")
                         .requestMatchers(HttpMethod.PUT, "/api/medical/seances/**").hasAuthority("PERSONNEL_MEDICAL")
                         .requestMatchers(HttpMethod.POST, "/api/medical/seances/{seanceId}/produits-non-standards").hasAuthority("PERSONNEL_MEDICAL")
                         .requestMatchers(HttpMethod.POST, "/api/medical/seances/{seanceId}/mesures").hasAuthority("PERSONNEL_MEDICAL")

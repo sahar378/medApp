@@ -69,4 +69,12 @@ public class TechnicienController {
       List<Technicien> techniciens = technicienService.getArchivedTechniciens();
       return ResponseEntity.ok(techniciens);
     }
+    @GetMapping("/search")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'INFIRMIER')")
+    public ResponseEntity<List<Technicien>> searchTechniciens(
+        @RequestParam String searchTerm,
+        @RequestParam(defaultValue = "false") boolean archived) {
+        List<Technicien> techniciens = technicienService.searchTechniciens(searchTerm, archived);
+        return ResponseEntity.ok(techniciens);
+    }
 }

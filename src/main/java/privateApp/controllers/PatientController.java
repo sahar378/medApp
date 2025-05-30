@@ -104,7 +104,7 @@ public class PatientController {
      * @return Le patient correspondant.
      */
     @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('MEDECIN')")
+    @PreAuthorize("hasAnyAuthority('MEDECIN', 'PERSONNEL_MEDICAL')")
     public ResponseEntity<Patient> getPatientById(@PathVariable Long id) {
         return ResponseEntity.ok(patientService.getPatientById(id));
     }
@@ -226,7 +226,7 @@ public class PatientController {
      * @return Liste des périodes de dialyse.
      */
     @GetMapping("/{patientId}/dialysis-history")
-    @PreAuthorize("hasAnyAuthority 'MEDECIN', 'INTENDANT')")
+    @PreAuthorize("hasAnyAuthority ('MEDECIN', 'INTENDANT' , 'PERSONNEL_MEDICAL')")
     public ResponseEntity<List<PatientDebutFin>> getDialysisHistory(@PathVariable Long patientId) {
         Patient patient = patientService.getPatientById(patientId);
         return ResponseEntity.ok(patient.getDebutFinRecords());
@@ -244,4 +244,14 @@ public class PatientController {
         patientService.unarchivePatient(id);
         return ResponseEntity.ok().build();
     }
+    
+    
+    @GetMapping("/non-archived")
+    @PreAuthorize("hasAnyAuthority('INTENDANT', 'PERSONNEL_MEDICAL', 'INFIRMIER', 'MEDECIN')")
+    public ResponseEntity<List<Patient>> getNonArchivedPatients() {
+        List<Patient> patients = patientService.getNonArchivedPatients();
+        return ResponseEntity.ok(patients);
+    }
+    
+    
 }

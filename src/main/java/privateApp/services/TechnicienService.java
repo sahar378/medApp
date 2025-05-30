@@ -87,4 +87,8 @@ public class TechnicienService {
 		public List<Technicien> getArchivedTechniciens() {
 		  return technicienRepository.findByArchivedTrue();
 		}
+		
+		public List<Technicien> searchTechniciens(String searchTerm, boolean archived) {
+		    return technicienRepository.searchTechniciens(searchTerm, archived);
+		}
 }
